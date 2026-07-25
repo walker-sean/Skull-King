@@ -121,6 +121,29 @@ export interface TrickWonEvent {
   winnerName: string;
 }
 
+/** Raised alongside TrickWon whenever a Loot card in that Trick formed a new Alliance. */
+export interface AllianceFormedEvent {
+  type: "AllianceFormed";
+  roomCode: string;
+  lootPlayerName: string;
+  winnerName: string;
+}
+
+/** The Advanced Card whose Trick-level effect (see CONTEXT.md) applied to a voided Trick. */
+export type TrickVoidingCard = "Kraken" | "WhiteWhale";
+
+/**
+ * Raised instead of TrickWon when a Kraken, or a White Whale with no Suited cards played,
+ * voids the Trick: no one wins it, and whoever would have won leads the next Trick instead
+ * (see CONTEXT.md's Kraken and White Whale entries).
+ */
+export interface TrickVoidedEvent {
+  type: "TrickVoided";
+  roomCode: string;
+  voidedBy: TrickVoidingCard;
+  nextLeaderName: string;
+}
+
 export interface PlayCardRejectedEvent {
   type: "PlayCardRejected";
   roomCode: string;
@@ -138,6 +161,8 @@ export type DomainEvent =
   | SubmitBidRejectedEvent
   | CardPlayedEvent
   | TrickWonEvent
+  | AllianceFormedEvent
+  | TrickVoidedEvent
   | PlayCardRejectedEvent
   | PlayerReconnectedEvent
   | PlayerDisconnectedEvent

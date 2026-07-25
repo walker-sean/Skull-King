@@ -25,6 +25,7 @@ function activeRoom(): RoomState {
       },
     ],
     trickLeader: "Alice",
+    alliances: [],
   };
 }
 
@@ -80,6 +81,7 @@ describe("disconnectPlayer", () => {
       currentRound: null,
       currentTrick: null,
       trickLeader: null,
+      alliances: [],
     };
     const result = disconnectPlayer(room, {
       type: "Disconnect",

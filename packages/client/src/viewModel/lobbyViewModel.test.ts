@@ -13,6 +13,7 @@ const roomState: RoomState = {
   currentRound: null,
   currentTrick: null,
   trickLeader: null,
+  alliances: [],
 };
 
 describe("selectLobbyView", () => {

@@ -7,6 +7,7 @@ import type {
   RoomState,
   Suit,
   TrickPlay,
+  TrickVoidingCard,
 } from "@skull-king/shared";
 import { areAllBidsSubmitted } from "./bidding.js";
 
@@ -35,9 +36,14 @@ function suitOf(card: Card): Suit | null {
   return card.kind === "Suited" ? card.suit : null;
 }
 
+/**
+ * The Trick's led Suit: a Special Card has no Suit, so when one leads, there's nothing to
+ * follow until the first Suited card played sets it (see CONTEXT.md's Loot entry — "if a
+ * Loot card leads the trick, the next suited card played sets the lead suit").
+ */
 function ledSuit(trick: readonly TrickPlay[]): Suit | null {
-  const ledCard = trick[0]?.card;
-  return ledCard === undefined ? null : suitOf(ledCard);
+  const firstSuited = trick.find((play) => play.card.kind === "Suited");
+  return firstSuited === undefined ? null : suitOf(firstSuited.card);
 }
 
 /**
@@ -64,15 +70,21 @@ export function currentTurnPlayerName(state: RoomState): string | null {
 }
 
 /**
- * A card's rank tier in the Capture Hierarchy (see CONTEXT.md): Escape < Suited Cards
- * < Pirate < Skull King < Mermaid. A Tigress resolves to the Pirate or Escape tier based
- * on how it was declared when played. Loot/Kraken/White Whale aren't ranked here — they're
- * Advanced Cards out of this ticket's scope.
+ * A card's rank tier in the Capture Hierarchy (see CONTEXT.md): Escape < Loot < Suited Cards
+ * < Pirate < Skull King < Mermaid. A Tigress resolves to the Pirate or Escape tier based on
+ * how it was declared when played. Loot plays as an Escape but ranks just above a plain
+ * Escape (or Tigress-as-Escape), so a Trick of nothing but Escapes and a Loot is won by the
+ * Loot's Player — matching the rulebook's "if every other card is an Escape, the Loot player
+ * wins" rule — while any Suited or higher card still beats it. Kraken and White Whale aren't
+ * capturing cards at all — they only ever affect the whole Trick's resolution (see
+ * resolveTrick) — so they can never themselves win a comparison.
  */
 function tierOf(card: Card): number {
   switch (card.kind) {
     case "Escape":
       return 0;
+    case "Loot":
+      return 0.5;
     case "Suited":
       return 1;
     case "Pirate":
@@ -118,7 +130,7 @@ function compareSuited(
 /**
  * Ranks two cards under the full Capture Hierarchy (see CONTEXT.md). Cards in the same
  * tier (e.g. two Pirates, both Mermaids, or several Escapes) rank equal here; combined
- * with resolveTrickWinner's reduce — which only replaces the leader on a strictly greater
+ * with capturePlayerName's reduce — which only replaces the leader on a strictly greater
  * comparison — that means the earliest one played keeps the win, matching the rulebook's
  * tie-break for duplicate Special Cards.
  */
@@ -134,11 +146,80 @@ function compareCards(a: Card, b: Card, led: Suit | null): number {
   return 0;
 }
 
-function resolveTrickWinner(trick: readonly TrickPlay[]): string {
+function capturePlayerName(trick: readonly TrickPlay[]): string {
   const led = ledSuit(trick);
   return trick.reduce((best, play) =>
     compareCards(play.card, best.card, led) > 0 ? play : best,
   ).playerName;
+}
+
+/**
+ * Under a White Whale (see CONTEXT.md), every card loses its Special-Card identity and
+ * Suit: only Suited cards' numbers count, highest wins, ties keep the earliest played.
+ * Returns null when no Suited card was played at all, which itself voids the Trick.
+ */
+function whaleWinnerName(trick: readonly TrickPlay[]): string | null {
+  const numbered = trick.filter(
+    (play): play is TrickPlay & { card: { kind: "Suited"; rank: number } } =>
+      play.card.kind === "Suited",
+  );
+  if (numbered.length === 0) {
+    return null;
+  }
+  return numbered.reduce((best, play) =>
+    play.card.rank > best.card.rank ? play : best,
+  ).playerName;
+}
+
+type TrickResolution =
+  | { outcome: "Won"; winnerName: string }
+  | {
+      outcome: "Voided";
+      voidedBy: TrickVoidingCard;
+      nextLeaderName: string;
+    };
+
+/**
+ * Resolves a full Trick, including the Advanced Cards (see CONTEXT.md): a Kraken voids the
+ * Trick outright, and a White Whale strips every card's identity so only numbers count
+ * (itself voiding the Trick if no Suited card was played). When both a Kraken and a White
+ * Whale appear in the same Trick, whichever was played second — the later index in play
+ * order — determines which effect applies; the other card's effect is entirely overridden,
+ * so the Trick falls back to the normal Capture Hierarchy to find whoever "would have won"
+ * either for the Kraken's void or for the Alliance/void determination.
+ */
+function resolveTrick(trick: readonly TrickPlay[]): TrickResolution {
+  const krakenIndex = trick.findIndex((play) => play.card.kind === "Kraken");
+  const whaleIndex = trick.findIndex((play) => play.card.kind === "WhiteWhale");
+
+  const effect: TrickVoidingCard | null =
+    krakenIndex === -1 && whaleIndex === -1
+      ? null
+      : whaleIndex > krakenIndex
+        ? "WhiteWhale"
+        : "Kraken";
+
+  if (effect === "Kraken") {
+    return {
+      outcome: "Voided",
+      voidedBy: "Kraken",
+      nextLeaderName: capturePlayerName(trick),
+    };
+  }
+
+  if (effect === "WhiteWhale") {
+    const winnerName = whaleWinnerName(trick);
+    if (winnerName === null) {
+      return {
+        outcome: "Voided",
+        voidedBy: "WhiteWhale",
+        nextLeaderName: capturePlayerName(trick),
+      };
+    }
+    return { outcome: "Won", winnerName };
+  }
+
+  return { outcome: "Won", winnerName: capturePlayerName(trick) };
 }
 
 export function playCard(
@@ -224,10 +305,57 @@ export function playCard(
   ];
 
   if (trick.length === state.players.length) {
-    const winnerName = resolveTrickWinner(trick);
+    const resolution = resolveTrick(trick);
+
+    if (resolution.outcome === "Voided") {
+      events.push({
+        type: "TrickVoided",
+        roomCode: command.roomCode,
+        voidedBy: resolution.voidedBy,
+        nextLeaderName: resolution.nextLeaderName,
+      });
+      return {
+        state: {
+          ...state,
+          players,
+          currentTrick: [],
+          trickLeader: resolution.nextLeaderName,
+        },
+        events,
+      };
+    }
+
+    const winnerName = resolution.winnerName;
     events.push({ type: "TrickWon", roomCode: command.roomCode, winnerName });
+
+    // Loot plays as an Escape but forms an Alliance with the Trick's winner, unless the
+    // Loot's own Player is the one who won (see CONTEXT.md's Loot and Alliance entries).
+    const newAlliances = trick
+      .filter(
+        (play) => play.card.kind === "Loot" && play.playerName !== winnerName,
+      )
+      .map((play) => ({
+        round: state.currentRound ?? 0,
+        lootPlayerName: play.playerName,
+        winnerName,
+      }));
+    for (const alliance of newAlliances) {
+      events.push({
+        type: "AllianceFormed",
+        roomCode: command.roomCode,
+        lootPlayerName: alliance.lootPlayerName,
+        winnerName: alliance.winnerName,
+      });
+    }
+
     return {
-      state: { ...state, players, currentTrick: [], trickLeader: winnerName },
+      state: {
+        ...state,
+        players,
+        currentTrick: [],
+        trickLeader: winnerName,
+        alliances: [...state.alliances, ...newAlliances],
+      },
       events,
     };
   }

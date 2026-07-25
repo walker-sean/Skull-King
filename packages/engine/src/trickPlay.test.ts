@@ -22,6 +22,7 @@ function activeRoom(
     currentRound: players[0]?.hand.length ?? 1,
     currentTrick: [],
     trickLeader: leaderName,
+    alliances: [],
   };
 }
 
@@ -687,6 +688,210 @@ describe("playCard", () => {
           reason: "InvalidTigressDeclaration",
         },
       ]);
+    });
+  });
+
+  describe("Advanced Cards: Loot/Alliance, Kraken, White Whale", () => {
+    function playFullTrick(playerHands: [string, Card][]): {
+      result: ReturnType<typeof playCard>;
+      room: RoomState;
+    } {
+      const players = playerHands.map(([name, card], index) =>
+        playerWith(name, [card], index === 0),
+      );
+      let room = activeRoom(players);
+      let result = playCard(room, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: playerHands[0]![1],
+        actorName: playerHands[0]![0],
+      });
+      room = (result.state as RoomState) ?? room;
+      for (let i = 1; i < playerHands.length; i++) {
+        result = playCard(room, {
+          type: "PlayCard",
+          roomCode: "ABCD",
+          card: playerHands[i]![1],
+          actorName: playerHands[i]![0],
+        });
+        room = (result.state as RoomState) ?? room;
+      }
+      return { result, room };
+    }
+
+    const loot: Card = { kind: "Loot" };
+    const kraken: Card = { kind: "Kraken" };
+    const whiteWhale: Card = { kind: "WhiteWhale" };
+    const escape: Card = { kind: "Escape" };
+    const pirate: Card = { kind: "Pirate" };
+    const skullKing: Card = { kind: "SkullKing" };
+
+    describe("Loot / Alliance", () => {
+      it("forms an Alliance between the Loot's Player and whoever wins the Trick", () => {
+        const { result, room } = playFullTrick([
+          ["Alice", loot],
+          ["Bob", suited("Parrot", 5)],
+        ]);
+
+        expect(result.events).toContainEqual({
+          type: "TrickWon",
+          roomCode: "ABCD",
+          winnerName: "Bob",
+        });
+        expect(result.events).toContainEqual({
+          type: "AllianceFormed",
+          roomCode: "ABCD",
+          lootPlayerName: "Alice",
+          winnerName: "Bob",
+        });
+        expect(room.alliances).toEqual([
+          { round: 1, lootPlayerName: "Alice", winnerName: "Bob" },
+        ]);
+      });
+
+      it("forms no Alliance when the Loot's Player wins their own Trick (every other card is an Escape)", () => {
+        const { result, room } = playFullTrick([
+          ["Alice", loot],
+          ["Bob", escape],
+        ]);
+
+        expect(result.events).toContainEqual({
+          type: "TrickWon",
+          roomCode: "ABCD",
+          winnerName: "Alice",
+        });
+        expect(result.events).not.toContainEqual(
+          expect.objectContaining({ type: "AllianceFormed" }),
+        );
+        expect(room.alliances).toEqual([]);
+      });
+
+      it("forms a separate Alliance for each Loot Player when more than one Loot is played into the Trick", () => {
+        const { result, room } = playFullTrick([
+          ["Alice", loot],
+          ["Bob", loot],
+          ["Carol", suited("Parrot", 9)],
+        ]);
+
+        expect(result.events).toContainEqual({
+          type: "TrickWon",
+          roomCode: "ABCD",
+          winnerName: "Carol",
+        });
+        expect(result.events).toContainEqual({
+          type: "AllianceFormed",
+          roomCode: "ABCD",
+          lootPlayerName: "Alice",
+          winnerName: "Carol",
+        });
+        expect(result.events).toContainEqual({
+          type: "AllianceFormed",
+          roomCode: "ABCD",
+          lootPlayerName: "Bob",
+          winnerName: "Carol",
+        });
+        expect(room.alliances).toHaveLength(2);
+      });
+    });
+
+    describe("Kraken", () => {
+      it("voids the Trick entirely, and whoever would have won leads the next Trick", () => {
+        const { result, room } = playFullTrick([
+          ["Alice", suited("Parrot", 5)],
+          ["Bob", kraken],
+          ["Carol", suited("Parrot", 9)],
+        ]);
+
+        expect(result.events).not.toContainEqual(
+          expect.objectContaining({ type: "TrickWon" }),
+        );
+        expect(result.events).toContainEqual({
+          type: "TrickVoided",
+          roomCode: "ABCD",
+          voidedBy: "Kraken",
+          nextLeaderName: "Carol",
+        });
+        expect(room.currentTrick).toEqual([]);
+        expect(room.trickLeader).toBe("Carol");
+      });
+    });
+
+    describe("White Whale", () => {
+      it("strips every card's Special-Card identity and Suit so the highest number wins", () => {
+        // Matches the rulebook's worked example (docs/rules/rulebook.md).
+        const { result } = playFullTrick([
+          ["Thomas", suited("JollyRoger", 2)],
+          ["Bill", pirate],
+          ["Susan", suited("TreasureChest", 14)],
+          ["Lori", skullKing],
+          ["Charlie", whiteWhale],
+        ]);
+
+        expect(result.events).toContainEqual({
+          type: "TrickWon",
+          roomCode: "ABCD",
+          winnerName: "Susan",
+        });
+      });
+
+      it("voids the Trick, with whoever would have won leading next, when no Suited card was played", () => {
+        const { result, room } = playFullTrick([
+          ["Alice", pirate],
+          ["Bob", whiteWhale],
+          ["Carol", skullKing],
+        ]);
+
+        expect(result.events).not.toContainEqual(
+          expect.objectContaining({ type: "TrickWon" }),
+        );
+        expect(result.events).toContainEqual({
+          type: "TrickVoided",
+          roomCode: "ABCD",
+          voidedBy: "WhiteWhale",
+          nextLeaderName: "Carol",
+        });
+        expect(room.trickLeader).toBe("Carol");
+      });
+    });
+
+    describe("Kraken and White Whale precedence", () => {
+      it("applies the White Whale's strip effect when it was played after the Kraken", () => {
+        const { result } = playFullTrick([
+          ["Alice", kraken],
+          ["Bob", whiteWhale],
+          ["Carol", suited("Parrot", 5)],
+          ["Dave", suited("Parrot", 9)],
+        ]);
+
+        expect(result.events).toContainEqual({
+          type: "TrickWon",
+          roomCode: "ABCD",
+          winnerName: "Dave",
+        });
+        expect(result.events).not.toContainEqual(
+          expect.objectContaining({ type: "TrickVoided" }),
+        );
+      });
+
+      it("applies the Kraken's void effect when it was played after the White Whale", () => {
+        const { result, room } = playFullTrick([
+          ["Alice", whiteWhale],
+          ["Bob", kraken],
+          ["Carol", suited("Parrot", 5)],
+          ["Dave", suited("Parrot", 9)],
+        ]);
+
+        expect(result.events).not.toContainEqual(
+          expect.objectContaining({ type: "TrickWon" }),
+        );
+        expect(result.events).toContainEqual({
+          type: "TrickVoided",
+          roomCode: "ABCD",
+          voidedBy: "Kraken",
+          nextLeaderName: "Dave",
+        });
+        expect(room.trickLeader).toBe("Dave");
+      });
     });
   });
 });

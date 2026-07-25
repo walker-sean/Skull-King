@@ -23,6 +23,16 @@ export interface TrickPlay {
   card: Card;
 }
 
+/**
+ * A bonus-sharing pairing formed by a Loot card between whoever played it and whoever
+ * won that Trick (see CONTEXT.md's Alliance entry).
+ */
+export interface Alliance {
+  round: number;
+  lootPlayerName: string;
+  winnerName: string;
+}
+
 export interface RoomState {
   roomCode: string;
   status: RoomStatus;
@@ -35,4 +45,6 @@ export interface RoomState {
   currentTrick: TrickPlay[] | null;
   /** Who leads the current (or next) Trick; null while the Room is still in Lobby. */
   trickLeader: string | null;
+  /** Every Alliance formed so far this Game, in the order they were formed. */
+  alliances: Alliance[];
 }

@@ -19,6 +19,7 @@ describe("createRoom", () => {
       currentRound: null,
       currentTrick: null,
       trickLeader: null,
+      alliances: [],
     });
     expect(result.events).toEqual([
       { type: "RoomCreated", roomCode: "ABCD", hostName: "Alice" },

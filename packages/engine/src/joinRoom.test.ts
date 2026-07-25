@@ -13,6 +13,7 @@ function lobbyWithHost(): RoomState {
     currentRound: null,
     currentTrick: null,
     trickLeader: null,
+    alliances: [],
   };
 }
 
@@ -136,6 +137,7 @@ describe("joinRoom", () => {
       currentRound: 2,
       currentTrick: [],
       trickLeader: "Alice",
+      alliances: [],
     };
 
     const result = joinRoom(room, {
@@ -174,6 +176,7 @@ describe("joinRoom", () => {
       currentRound: 1,
       currentTrick: [],
       trickLeader: "Alice",
+      alliances: [],
     };
 
     const result = joinRoom(room, {
@@ -201,6 +204,7 @@ describe("joinRoom", () => {
       currentRound: 1,
       currentTrick: [],
       trickLeader: "Alice",
+      alliances: [],
     };
 
     const result = joinRoom(room, {
@@ -240,6 +244,7 @@ describe("joinRoom", () => {
       currentRound: 1,
       currentTrick: [],
       trickLeader: "Alice",
+      alliances: [],
     };
     const result = joinRoom(room, {
       type: "JoinRoom",

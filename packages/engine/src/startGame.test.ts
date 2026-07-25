@@ -21,6 +21,7 @@ function lobbyWith(count: number): RoomState {
     currentRound: null,
     currentTrick: null,
     trickLeader: null,
+    alliances: [],
   };
 }
 
