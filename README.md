@@ -6,7 +6,7 @@ See [CONTEXT.md](CONTEXT.md) for domain language and [docs/adr/](docs/adr/) for 
 
 ## Status
 
-Early development. Implemented so far: Room creation & join (Lobby), Start Game (player-count gate + Scoring Mode selection), Round dealing with the Hand Size Cap, private simultaneous Bidding (hidden until every Player has bid, then revealed to all at once), and Trick play — turn-order enforcement, follow-suit legality, and full Capture Hierarchy resolution (Escape < Suited Cards (Trump beats other Suits) < Pirate < Skull King < Mermaid, with a Mermaid always beating a Pirate or the Skull King regardless of play order, and a Tigress declared as Pirate or Escape at the moment it's played); the winner leads the next Trick. Loot, Kraken, and White Whale (the Advanced Cards) aren't ranked yet.
+Early development. Implemented so far: Room creation & join (Lobby), Start Game (player-count gate + Scoring Mode selection), Round dealing with the Hand Size Cap, private simultaneous Bidding (hidden until every Player has bid, then revealed to all at once), Trick play — turn-order enforcement, follow-suit legality, and full Capture Hierarchy resolution (Escape < Suited Cards (Trump beats other Suits) < Pirate < Skull King < Mermaid, with a Mermaid always beating a Pirate or the Skull King regardless of play order, and a Tigress declared as Pirate or Escape at the moment it's played, with the winner leading the next Trick), and Reconnect & Pause/Resume — a disconnecting Player pauses an Active Room until they rejoin with the same Room Code and name, resuming their hand, Bid, and any Trick in progress exactly, surviving a server restart. Loot, Kraken, and White Whale (the Advanced Cards) aren't ranked yet.
 
 ## Structure
 

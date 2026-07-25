@@ -5,6 +5,7 @@ export const REJECTION_MESSAGES: Record<RejectionEvent["reason"], string> = {
   NameTaken: "That name is already taken in this Room.",
   RoomNotInLobby: "This Room has already started.",
   InvalidName: "Please enter a name.",
+  AlreadyConnected: "That Player is already connected in this Room.",
   TooFewPlayers: "Need at least 3 Players to start.",
   TooManyPlayers: "At most 8 Players can play at once.",
   NotHost: "Only the Host can start the Game.",

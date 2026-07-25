@@ -2,6 +2,7 @@ import { createServer, type Server as HttpServer } from "node:http";
 import { Server as SocketIoServer } from "socket.io";
 import {
   createRoom,
+  disconnectPlayer,
   generateRoomCode,
   joinRoom,
   playCard,
@@ -110,14 +111,17 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
 
       store.saveRoom(result.state);
       void socket.join(normalizedCode);
-      const playerJoined = result.events.find((event) => event.type === "PlayerJoined");
-      if (playerJoined !== undefined) {
-        sessionsBySocketId.set(socket.id, {
-          roomCode: normalizedCode,
-          playerName: playerJoined.playerName,
-        });
+      // Either a brand-new join or a reconnect to an existing seat (see joinRoom.ts) —
+      // both bind this socket to the same Player identity.
+      const identityEvent = result.events.find(
+        (event): event is typeof event & { playerName: string } =>
+          event.type === "PlayerJoined" || event.type === "PlayerReconnected",
+      );
+      const playerName = identityEvent?.playerName ?? null;
+      if (playerName !== null) {
+        sessionsBySocketId.set(socket.id, { roomCode: normalizedCode, playerName });
       }
-      callback({ ok: true, state: redactRoomStateFor(result.state, playerJoined?.playerName ?? null) });
+      callback({ ok: true, state: redactRoomStateFor(result.state, playerName) });
       void broadcastRoomState(normalizedCode, result.state);
     });
 
@@ -188,7 +192,20 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
     });
 
     socket.on("disconnect", () => {
+      const session = sessionsBySocketId.get(socket.id);
       sessionsBySocketId.delete(socket.id);
+      if (session === undefined) return;
+
+      const state = store.loadRoom(session.roomCode);
+      const result = disconnectPlayer(state, {
+        type: "Disconnect",
+        roomCode: session.roomCode,
+        playerName: session.playerName,
+      });
+
+      if (result.state === null) return;
+      store.saveRoom(result.state);
+      void broadcastRoomState(session.roomCode, result.state);
     });
   });
 

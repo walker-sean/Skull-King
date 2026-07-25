@@ -430,4 +430,110 @@ describe("createRealtimeServer", () => {
     expect(response.state.currentTrick).toEqual([]);
     expect(["Alice", "Bob", "Carol"]).toContain(response.state.trickLeader);
   });
+
+  it("pauses an Active Room when a Player disconnects, showing everyone who it's waiting on", async () => {
+    const { host, bob } = await startedRoomOf3();
+
+    const hostSeesPause = new Promise<RoomState>((resolve) => {
+      host.on("roomState", (state) => {
+        if (state.status === "Paused") resolve(state);
+      });
+    });
+
+    bob.disconnect();
+
+    const pausedState = await hostSeesPause;
+    expect(pausedState.status).toBe("Paused");
+    expect(pausedState.players.find((p) => p.name === "Bob")?.connected).toBe(false);
+    expect(pausedState.players.find((p) => p.name === "Alice")?.connected).toBe(true);
+  });
+
+  it("resumes a Paused Room once the disconnected Player reconnects, restoring their Bid and hand", async () => {
+    const { host, bob, carol, roomCode } = await startedRoomOf3();
+    await emit(host, "submitBid", { roomCode, bid: 1 });
+    const bobBidResponse = await emit(bob, "submitBid", { roomCode, bid: 0 });
+    if (!bobBidResponse.ok) throw new Error("expected success");
+    const bobHandBeforeDisconnect = bobBidResponse.state.players.find((p) => p.name === "Bob")?.hand;
+
+    const hostSeesPause = new Promise<void>((resolve) => {
+      host.on("roomState", (state) => {
+        if (state.status === "Paused") resolve();
+      });
+    });
+    bob.disconnect();
+    await hostSeesPause;
+
+    const carolSeesResume = new Promise<RoomState>((resolve) => {
+      carol.on("roomState", (state) => {
+        if (state.status === "Active") resolve(state);
+      });
+    });
+
+    const bobReconnected = await newClient();
+    const reconnectResponse = await emit(bobReconnected, "joinRoom", { roomCode, displayName: "Bob" });
+
+    expect(reconnectResponse.ok).toBe(true);
+    if (!reconnectResponse.ok) throw new Error("expected success");
+    expect(reconnectResponse.state.status).toBe("Active");
+    const reconnectedBob = reconnectResponse.state.players.find((p) => p.name === "Bob");
+    expect(reconnectedBob?.connected).toBe(true);
+    expect(reconnectedBob?.bid).toBe(0);
+    expect(reconnectedBob?.hand).toEqual(bobHandBeforeDisconnect);
+
+    const resumedState = await carolSeesResume;
+    expect(resumedState.status).toBe("Active");
+  });
+
+  it("rejects a stranger trying to reconnect under a connected Player's name", async () => {
+    const { roomCode } = await startedRoomOf3();
+
+    const stranger = await newClient();
+    const response = await emit(stranger, "joinRoom", { roomCode, displayName: "Alice" });
+
+    expect(response.ok).toBe(false);
+    if (response.ok) throw new Error("expected rejection");
+    expect(response.event).toEqual({ type: "JoinRejected", roomCode, reason: "AlreadyConnected" });
+  });
+
+  it("keeps a mid-Trick Paused Room's state intact across a simulated server restart", async () => {
+    const { host, bob, roomCode, hands } = await playableRoomOf3();
+
+    await emit(host, "playCard", { roomCode, card: hands.Alice });
+
+    const hostSeesPause = new Promise<void>((resolve) => {
+      host.on("roomState", (state) => {
+        if (state.status === "Paused") resolve();
+      });
+    });
+    bob.disconnect();
+    await hostSeesPause;
+
+    // Simulate a process restart: every remaining socket drops too, so every Player
+    // (not just the one already disconnected) has to reconnect afterwards.
+    for (const client of clients) client.disconnect();
+    clients = [];
+    await new Promise<void>((resolve) => server.io.close(() => resolve()));
+    store.close();
+
+    store = openRoomStore(dbPath);
+    server = createRealtimeServer(store);
+    await new Promise<void>((resolve) => {
+      server.httpServer.listen(0, () => resolve());
+    });
+    port = (server.httpServer.address() as AddressInfo).port;
+
+    const aliceReconnected = await newClient();
+    await emit(aliceReconnected, "joinRoom", { roomCode, displayName: "Alice" });
+    const carolReconnected = await newClient();
+    await emit(carolReconnected, "joinRoom", { roomCode, displayName: "Carol" });
+    const bobReconnected = await newClient();
+    const response = await emit(bobReconnected, "joinRoom", { roomCode, displayName: "Bob" });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("expected success");
+    expect(response.state.status).toBe("Active");
+    expect(response.state.currentTrick).toEqual([{ playerName: "Alice", card: hands.Alice }]);
+    expect(response.state.players.find((p) => p.name === "Bob")?.hand).toContainEqual(hands.Bob);
+    expect(response.state.players.every((p) => p.connected)).toBe(true);
+  });
 });

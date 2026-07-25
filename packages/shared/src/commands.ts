@@ -37,9 +37,22 @@ export interface PlayCardCommand {
   actorName: string | null;
 }
 
+/**
+ * Server-internal: raised when a Player's socket disconnects. Not part of the wire
+ * protocol — a Player can't ask to be disconnected, the server detects it — but modeled
+ * as a command so the transition it causes (pausing the Room) is pure, engine-level, and
+ * testable like every other state change.
+ */
+export interface DisconnectCommand {
+  type: "Disconnect";
+  roomCode: string;
+  playerName: string;
+}
+
 export type Command =
   | CreateRoomCommand
   | JoinRoomCommand
   | StartGameCommand
   | SubmitBidCommand
-  | PlayCardCommand;
+  | PlayCardCommand
+  | DisconnectCommand;

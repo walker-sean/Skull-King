@@ -1,7 +1,12 @@
 import type { Card } from "./card.js";
 import type { ScoringMode } from "./room.js";
 
-export type JoinRejectedReason = "RoomNotFound" | "NameTaken" | "RoomNotInLobby" | "InvalidName";
+export type JoinRejectedReason =
+  | "RoomNotFound"
+  | "NameTaken"
+  | "RoomNotInLobby"
+  | "InvalidName"
+  | "AlreadyConnected";
 
 export type StartGameRejectedReason =
   | "RoomNotFound"
@@ -31,6 +36,35 @@ export interface JoinRejectedEvent {
   type: "JoinRejected";
   roomCode: string;
   reason: JoinRejectedReason;
+}
+
+/**
+ * Raised instead of PlayerJoined when the joining name matches an existing, disconnected
+ * Player in an Active or Paused Room: they're resuming their seat (see
+ * docs/adr/0002-no-accounts-reconnect-by-name.md), not joining as a new roster entry.
+ */
+export interface PlayerReconnectedEvent {
+  type: "PlayerReconnected";
+  roomCode: string;
+  playerName: string;
+}
+
+export interface PlayerDisconnectedEvent {
+  type: "PlayerDisconnected";
+  roomCode: string;
+  playerName: string;
+}
+
+/** Raised alongside PlayerDisconnected when the disconnect causes an Active Room to pause. */
+export interface RoomPausedEvent {
+  type: "RoomPaused";
+  roomCode: string;
+}
+
+/** Raised alongside PlayerReconnected when the reconnect brings every roster Player back. */
+export interface RoomResumedEvent {
+  type: "RoomResumed";
+  roomCode: string;
 }
 
 export interface GameStartedEvent {
@@ -104,7 +138,11 @@ export type DomainEvent =
   | SubmitBidRejectedEvent
   | CardPlayedEvent
   | TrickWonEvent
-  | PlayCardRejectedEvent;
+  | PlayCardRejectedEvent
+  | PlayerReconnectedEvent
+  | PlayerDisconnectedEvent
+  | RoomPausedEvent
+  | RoomResumedEvent;
 
 export type RejectionEvent =
   | RoomCreateRejectedEvent

@@ -54,9 +54,116 @@ describe("joinRoom", () => {
     expect(result.events).toEqual([{ type: "JoinRejected", roomCode: "ABCD", reason: "NameTaken" }]);
   });
 
-  it("rejects joining a Room that is no longer in Lobby status", () => {
+  it("rejects a brand-new Player joining a Room that is no longer in Lobby status", () => {
     const room: RoomState = { ...lobbyWithHost(), status: "Active" };
     const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "Bob" });
+
+    expect(result.state).toEqual(room);
+    expect(result.events).toEqual([{ type: "JoinRejected", roomCode: "ABCD", reason: "RoomNotInLobby" }]);
+  });
+
+  it("rejects joining a Completed Room even if the name matches a disconnected Player", () => {
+    const room: RoomState = {
+      ...lobbyWithHost(),
+      status: "Completed",
+      players: [{ name: "Alice", isHost: true, connected: false, hand: [], bid: null }],
+    };
+    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "Alice" });
+
+    expect(result.state).toEqual(room);
+    expect(result.events).toEqual([{ type: "JoinRejected", roomCode: "ABCD", reason: "RoomNotInLobby" }]);
+  });
+
+  it("resumes a disconnected Player's seat in an Active Room, leaving hand and bid untouched", () => {
+    const room: RoomState = {
+      roomCode: "ABCD",
+      status: "Active",
+      players: [
+        { name: "Alice", isHost: true, connected: true, hand: [], bid: 1 },
+        { name: "Bob", isHost: false, connected: false, hand: [{ kind: "Suited", suit: "Parrot", rank: 5 }], bid: null },
+      ],
+      scoringMode: "Traditional",
+      currentRound: 2,
+      currentTrick: [],
+      trickLeader: "Alice",
+    };
+
+    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "bob" });
+
+    expect(result.state).toEqual({
+      ...room,
+      players: [
+        room.players[0],
+        { name: "Bob", isHost: false, connected: true, hand: [{ kind: "Suited", suit: "Parrot", rank: 5 }], bid: null },
+      ],
+    });
+    expect(result.events).toEqual([
+      { type: "PlayerReconnected", roomCode: "ABCD", playerName: "Bob" },
+    ]);
+  });
+
+  it("resumes a Paused Room to Active once every Player has reconnected", () => {
+    const room: RoomState = {
+      roomCode: "ABCD",
+      status: "Paused",
+      players: [
+        { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
+        { name: "Bob", isHost: false, connected: false, hand: [], bid: null },
+      ],
+      scoringMode: "Traditional",
+      currentRound: 1,
+      currentTrick: [],
+      trickLeader: "Alice",
+    };
+
+    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "Bob" });
+
+    expect(result.state?.status).toBe("Active");
+    expect(result.events).toEqual([
+      { type: "PlayerReconnected", roomCode: "ABCD", playerName: "Bob" },
+      { type: "RoomResumed", roomCode: "ABCD" },
+    ]);
+  });
+
+  it("keeps a Paused Room paused if other Players are still disconnected", () => {
+    const room: RoomState = {
+      roomCode: "ABCD",
+      status: "Paused",
+      players: [
+        { name: "Alice", isHost: true, connected: false, hand: [], bid: null },
+        { name: "Bob", isHost: false, connected: false, hand: [], bid: null },
+      ],
+      scoringMode: "Traditional",
+      currentRound: 1,
+      currentTrick: [],
+      trickLeader: "Alice",
+    };
+
+    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "Bob" });
+
+    expect(result.state?.status).toBe("Paused");
+    expect(result.events).toEqual([{ type: "PlayerReconnected", roomCode: "ABCD", playerName: "Bob" }]);
+  });
+
+  it("rejects a reconnect attempt for a Player who is already connected", () => {
+    const room: RoomState = { ...lobbyWithHost(), status: "Active" };
+    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "Alice" });
+
+    expect(result.state).toEqual(room);
+    expect(result.events).toEqual([{ type: "JoinRejected", roomCode: "ABCD", reason: "AlreadyConnected" }]);
+  });
+
+  it("rejects a brand-new name joining a Room that is no longer in Lobby status, even while Paused", () => {
+    const room: RoomState = {
+      roomCode: "ABCD",
+      status: "Paused",
+      players: [{ name: "Alice", isHost: true, connected: false, hand: [], bid: null }],
+      scoringMode: "Traditional",
+      currentRound: 1,
+      currentTrick: [],
+      trickLeader: "Alice",
+    };
+    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "Carol" });
 
     expect(result.state).toEqual(room);
     expect(result.events).toEqual([{ type: "JoinRejected", roomCode: "ABCD", reason: "RoomNotInLobby" }]);
