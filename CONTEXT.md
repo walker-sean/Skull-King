@@ -41,7 +41,7 @@ One card played by each Player in turn order, ranked by the Capture Hierarchy. W
 ### Cards & Capture
 
 **Deck**:
-The 74 cards in play for this project's ruleset: 56 Suited Cards, 5 Pirates, 1 Tigress, 1 Skull King, 2 Mermaids, 5 Escapes, 2 Loot, 1 Kraken, 1 White Whale. Source of truth: `docs/rules/skull-king-rulebook.pdf`.
+The 74 cards in play for this project's ruleset: 56 Suited Cards, 5 Pirates, 1 Tigress, 1 Skull King, 2 Mermaids, 5 Escapes, 2 Loot, 1 Kraken, 1 White Whale. Source of truth: `docs/rules/rulebook.md` (transcribed from `docs/rules/skull-king-rulebook.pdf`).
 
 **Suit**:
 One of four card groups, each numbered 1–14: Parrot (green), Treasure Chest (yellow), Pirate Map (purple), and Jolly Roger (black — the Trump Suit).
@@ -89,10 +89,10 @@ The Room-level setting, chosen by the Host before the Game starts, that determin
 _Avoid_: Scoring Variant, Ruleset (Ruleset refers to which cards are in the Deck, not how points are scored).
 
 **Traditional Scoring**:
-A Scoring Mode where hitting a Bid exactly scores points per Trick taken, and missing it costs points per Trick of difference. Source of truth: `docs/rules/skull-king-rulebook.pdf`.
+A Scoring Mode where hitting a Bid exactly scores points per Trick taken, and missing it costs points per Trick of difference. Source of truth: `docs/rules/rulebook.md` (transcribed from `docs/rules/skull-king-rulebook.pdf`).
 
 **Rascal Scoring**:
-A Scoring Mode where every Player has the same potential score each Round regardless of their Bid, earned in full, half, or none depending on the Round's Outcome (Direct Hit, Glancing Blow, or Complete Miss). Source of truth: `docs/rules/skull-king-rascal-scoring.pdf`.
+A Scoring Mode where every Player has the same potential score each Round regardless of their Bid, earned in full, half, or none depending on the Round's Outcome (Direct Hit, Glancing Blow, or Complete Miss). Source of truth: `docs/rules/rascal-scoring.md` (transcribed from `docs/rules/skull-king-rascal-scoring.pdf`).
 
 **Outcome** (Direct Hit / Glancing Blow / Complete Miss):
 The three Bid-accuracy results Rascal Scoring uses to decide how much of a Round's potential score — and Bonus — a Player earns: exact Bid, off by one, and off by two or more.
