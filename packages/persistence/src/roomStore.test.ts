@@ -12,6 +12,7 @@ const lobbyRoom: RoomState = {
     { name: "Alice", isHost: true, connected: true },
     { name: "Bob", isHost: false, connected: true },
   ],
+  scoringMode: null,
 };
 
 describe("RoomStore", () => {
@@ -53,7 +54,7 @@ describe("RoomStore", () => {
 
   it("lists Room Codes that are not Completed", () => {
     store.saveRoom(lobbyRoom);
-    store.saveRoom({ roomCode: "WXYZ", status: "Completed", players: [] });
+    store.saveRoom({ roomCode: "WXYZ", status: "Completed", players: [], scoringMode: "Traditional" });
 
     expect(store.listNonCompletedRoomCodes()).toEqual(["ABCD"]);
   });
@@ -66,6 +67,7 @@ describe("RoomStore", () => {
         { name: "Alice", isHost: true, connected: true },
         { name: "Bob", isHost: false, connected: false },
       ],
+      scoringMode: "Rascal",
     };
     store.saveRoom(completedRoom);
 

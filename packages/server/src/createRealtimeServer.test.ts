@@ -20,7 +20,7 @@ function connectClient(port: number): Promise<Client> {
 
 function emit<Req>(
   socket: Client,
-  event: "createRoom" | "joinRoom",
+  event: "createRoom" | "joinRoom" | "startGame",
   request: Req,
 ): Promise<CommandResponse> {
   return new Promise((resolve) => {
@@ -156,5 +156,67 @@ describe("createRealtimeServer", () => {
     expect(response.ok).toBe(true);
     if (!response.ok) throw new Error("expected success");
     expect(response.state.players.map((p) => p.name)).toEqual(["Alice", "Bob"]);
+  });
+
+  it("starts the Game once 3 Players have joined, locking in the Scoring Mode and broadcasting Active status", async () => {
+    const host = await newClient();
+    const created = await emit(host, "createRoom", { hostName: "Alice" });
+    if (!created.ok) throw new Error("expected success");
+    const { roomCode } = created.state;
+    await emit(await newClient(), "joinRoom", { roomCode, displayName: "Bob" });
+    await emit(await newClient(), "joinRoom", { roomCode, displayName: "Carol" });
+
+    const broadcastReceived = new Promise<unknown>((resolve) => {
+      host.on("roomState", (state) => {
+        if (state.status === "Active") resolve(state);
+      });
+    });
+
+    const response = await emit(host, "startGame", { roomCode, scoringMode: "Traditional" });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("expected success");
+    expect(response.state.status).toBe("Active");
+    expect(response.state.scoringMode).toBe("Traditional");
+    expect(await broadcastReceived).toEqual(response.state);
+  });
+
+  it("rejects starting the Game with fewer than 3 Players", async () => {
+    const host = await newClient();
+    const created = await emit(host, "createRoom", { hostName: "Alice" });
+    if (!created.ok) throw new Error("expected success");
+
+    const response = await emit(host, "startGame", {
+      roomCode: created.state.roomCode,
+      scoringMode: "Traditional",
+    });
+
+    expect(response.ok).toBe(false);
+    if (response.ok) throw new Error("expected rejection");
+    expect(response.event).toEqual({
+      type: "StartGameRejected",
+      roomCode: created.state.roomCode,
+      reason: "TooFewPlayers",
+    });
+  });
+
+  it("rejects starting the Game a second time once it is already Active", async () => {
+    const host = await newClient();
+    const created = await emit(host, "createRoom", { hostName: "Alice" });
+    if (!created.ok) throw new Error("expected success");
+    const { roomCode } = created.state;
+    await emit(await newClient(), "joinRoom", { roomCode, displayName: "Bob" });
+    await emit(await newClient(), "joinRoom", { roomCode, displayName: "Carol" });
+    await emit(host, "startGame", { roomCode, scoringMode: "Traditional" });
+
+    const response = await emit(host, "startGame", { roomCode, scoringMode: "Rascal" });
+
+    expect(response.ok).toBe(false);
+    if (response.ok) throw new Error("expected rejection");
+    expect(response.event).toEqual({
+      type: "StartGameRejected",
+      roomCode,
+      reason: "RoomNotInLobby",
+    });
   });
 });

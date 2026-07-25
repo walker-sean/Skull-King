@@ -1,6 +1,6 @@
 import { createServer, type Server as HttpServer } from "node:http";
 import { Server as SocketIoServer } from "socket.io";
-import { createRoom, generateRoomCode, joinRoom } from "@skull-king/engine";
+import { createRoom, generateRoomCode, joinRoom, startGame } from "@skull-king/engine";
 import type { RoomStore } from "@skull-king/persistence";
 import type {
   ClientToServerEvents,
@@ -15,7 +15,11 @@ export interface RealtimeServer {
 }
 
 function isRejectionEvent(event: DomainEvent): event is RejectionEvent {
-  return event.type === "RoomCreateRejected" || event.type === "JoinRejected";
+  return (
+    event.type === "RoomCreateRejected" ||
+    event.type === "JoinRejected" ||
+    event.type === "StartGameRejected"
+  );
 }
 
 function firstRejection(events: DomainEvent[]): RejectionEvent {
@@ -61,6 +65,21 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
 
       store.saveRoom(result.state);
       void socket.join(normalizedCode);
+      callback({ ok: true, state: result.state });
+      io.to(normalizedCode).emit("roomState", result.state);
+    });
+
+    socket.on("startGame", ({ roomCode, scoringMode }, callback) => {
+      const normalizedCode = roomCode.trim().toUpperCase();
+      const state = store.loadRoom(normalizedCode);
+      const result = startGame(state, { type: "StartGame", roomCode: normalizedCode, scoringMode });
+
+      if (result.state === null || result.events.some(isRejectionEvent)) {
+        callback({ ok: false, event: firstRejection(result.events) });
+        return;
+      }
+
+      store.saveRoom(result.state);
       callback({ ok: true, state: result.state });
       io.to(normalizedCode).emit("roomState", result.state);
     });

@@ -1,4 +1,4 @@
-import type { RoomState } from "./room.js";
+import type { RoomState, ScoringMode } from "./room.js";
 import type { RejectionEvent } from "./events.js";
 
 export interface CreateRoomRequest {
@@ -8,6 +8,11 @@ export interface CreateRoomRequest {
 export interface JoinRoomRequest {
   roomCode: string;
   displayName: string;
+}
+
+export interface StartGameRequest {
+  roomCode: string;
+  scoringMode: ScoringMode;
 }
 
 export type CommandResponse =
@@ -21,4 +26,5 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
   createRoom: (request: CreateRoomRequest, callback: (response: CommandResponse) => void) => void;
   joinRoom: (request: JoinRoomRequest, callback: (response: CommandResponse) => void) => void;
+  startGame: (request: StartGameRequest, callback: (response: CommandResponse) => void) => void;
 }

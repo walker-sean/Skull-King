@@ -1,3 +1,5 @@
+import type { ScoringMode } from "./room.js";
+
 export interface CreateRoomCommand {
   type: "CreateRoom";
   roomCode: string;
@@ -10,4 +12,10 @@ export interface JoinRoomCommand {
   displayName: string;
 }
 
-export type Command = CreateRoomCommand | JoinRoomCommand;
+export interface StartGameCommand {
+  type: "StartGame";
+  roomCode: string;
+  scoringMode: ScoringMode;
+}
+
+export type Command = CreateRoomCommand | JoinRoomCommand | StartGameCommand;

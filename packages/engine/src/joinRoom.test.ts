@@ -7,6 +7,7 @@ function lobbyWithHost(): RoomState {
     roomCode: "ABCD",
     status: "Lobby",
     players: [{ name: "Alice", isHost: true, connected: true }],
+    scoringMode: null,
   };
 }
 

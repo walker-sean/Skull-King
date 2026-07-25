@@ -14,6 +14,7 @@ function createMockSocketClient(overrides: Partial<SocketClient> = {}): SocketCl
   return {
     createRoom: vi.fn(),
     joinRoom: vi.fn(),
+    startGame: vi.fn(),
     onRoomState: vi.fn((handler) => {
       roomStateHandler = handler;
       return () => {
@@ -31,6 +32,7 @@ const lobbyState: RoomState = {
   roomCode: "ABCD",
   status: "Lobby",
   players: [{ name: "Alice", isHost: true, connected: true }],
+  scoringMode: null,
 };
 
 describe("App", () => {
@@ -109,5 +111,79 @@ describe("App", () => {
     (socketClient as unknown as { emitRoomState: (s: RoomState) => void }).emitRoomState(updated);
 
     expect(await screen.findByText("Bob")).toBeInTheDocument();
+  });
+
+  it("blocks the Host from starting the Game with fewer than 3 Players, showing a reason", async () => {
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: lobbyState }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), { target: { value: "Alice" } });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText("ABCD");
+
+    expect(screen.getByRole("button", { name: /start game/i })).toBeDisabled();
+    expect(screen.getByText(/need at least 3 players/i)).toBeInTheDocument();
+  });
+
+  it("lets the Host pick a Scoring Mode and start the Game once enough Players have joined", async () => {
+    const threePlayerState: RoomState = {
+      ...lobbyState,
+      players: [
+        ...lobbyState.players,
+        { name: "Bob", isHost: false, connected: true },
+        { name: "Carol", isHost: false, connected: true },
+      ],
+    };
+    const startedState: RoomState = {
+      ...threePlayerState,
+      status: "Active",
+      scoringMode: "Rascal",
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: threePlayerState }),
+      startGame: vi.fn().mockResolvedValue({ ok: true, state: startedState }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), { target: { value: "Alice" } });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText("ABCD");
+
+    fireEvent.change(screen.getByLabelText(/scoring mode/i), { target: { value: "Rascal" } });
+    fireEvent.click(screen.getByRole("button", { name: /start game/i }));
+
+    expect(await screen.findByText("Active")).toBeInTheDocument();
+    expect(screen.getByText("Scoring Mode: Rascal")).toBeInTheDocument();
+    expect(socketClient.startGame).toHaveBeenCalledWith("ABCD", "Rascal");
+  });
+
+  it("shows a reason on the Lobby screen when the server rejects starting the Game", async () => {
+    const threePlayerState: RoomState = {
+      ...lobbyState,
+      players: [
+        ...lobbyState.players,
+        { name: "Bob", isHost: false, connected: true },
+        { name: "Carol", isHost: false, connected: true },
+      ],
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: threePlayerState }),
+      startGame: vi.fn().mockResolvedValue({
+        ok: false,
+        event: { type: "StartGameRejected", roomCode: "ABCD", reason: "RoomNotInLobby" },
+      }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), { target: { value: "Alice" } });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText("ABCD");
+
+    fireEvent.click(screen.getByRole("button", { name: /start game/i }));
+
+    expect(await screen.findByText(/this room has already started/i)).toBeInTheDocument();
+    expect(screen.getByText("Lobby")).toBeInTheDocument();
   });
 });

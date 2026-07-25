@@ -1,20 +1,14 @@
 import { useEffect, useState } from "react";
-import type { RejectionEvent, RoomState } from "@skull-king/shared";
+import type { RoomState, ScoringMode } from "@skull-king/shared";
 import type { SocketClient } from "./socketClient.js";
 import { HomeScreen } from "./HomeScreen.js";
 import { LobbyScreen } from "./LobbyScreen.js";
+import { REJECTION_MESSAGES } from "./rejectionMessages.js";
 import { selectLobbyView } from "./viewModel/lobbyViewModel.js";
 
 export interface AppProps {
   socketClient: SocketClient;
 }
-
-const REJECTION_MESSAGES: Record<RejectionEvent["reason"], string> = {
-  RoomNotFound: "No Room exists with that code.",
-  NameTaken: "That name is already taken in this Room.",
-  RoomNotInLobby: "This Room has already started.",
-  InvalidName: "Please enter a name.",
-};
 
 export function App({ socketClient }: AppProps) {
   const [roomState, setRoomState] = useState<RoomState | null>(null);
@@ -45,8 +39,25 @@ export function App({ socketClient }: AppProps) {
     }
   }
 
+  async function handleStartGame(scoringMode: ScoringMode) {
+    if (!roomState) return;
+    setError(null);
+    const response = await socketClient.startGame(roomState.roomCode, scoringMode);
+    if (response.ok) {
+      setRoomState(response.state);
+    } else {
+      setError(REJECTION_MESSAGES[response.event.reason]);
+    }
+  }
+
   if (roomState && localPlayerName) {
-    return <LobbyScreen view={selectLobbyView(roomState, localPlayerName)} />;
+    return (
+      <LobbyScreen
+        view={selectLobbyView(roomState, localPlayerName)}
+        error={error}
+        onStartGame={handleStartGame}
+      />
+    );
   }
 
   return <HomeScreen error={error} onCreateRoom={handleCreateRoom} onJoinRoom={handleJoinRoom} />;

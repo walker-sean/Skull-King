@@ -1,4 +1,12 @@
+import type { ScoringMode } from "./room.js";
+
 export type JoinRejectedReason = "RoomNotFound" | "NameTaken" | "RoomNotInLobby" | "InvalidName";
+
+export type StartGameRejectedReason =
+  | "RoomNotFound"
+  | "TooFewPlayers"
+  | "TooManyPlayers"
+  | "RoomNotInLobby";
 
 export interface RoomCreatedEvent {
   type: "RoomCreated";
@@ -22,10 +30,24 @@ export interface JoinRejectedEvent {
   reason: JoinRejectedReason;
 }
 
+export interface GameStartedEvent {
+  type: "GameStarted";
+  roomCode: string;
+  scoringMode: ScoringMode;
+}
+
+export interface StartGameRejectedEvent {
+  type: "StartGameRejected";
+  roomCode: string;
+  reason: StartGameRejectedReason;
+}
+
 export type DomainEvent =
   | RoomCreatedEvent
   | RoomCreateRejectedEvent
   | PlayerJoinedEvent
-  | JoinRejectedEvent;
+  | JoinRejectedEvent
+  | GameStartedEvent
+  | StartGameRejectedEvent;
 
-export type RejectionEvent = RoomCreateRejectedEvent | JoinRejectedEvent;
+export type RejectionEvent = RoomCreateRejectedEvent | JoinRejectedEvent | StartGameRejectedEvent;

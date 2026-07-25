@@ -16,6 +16,7 @@ export function createRoom(command: CreateRoomCommand): EngineResult {
       roomCode: command.roomCode,
       status: "Lobby",
       players: [{ name: hostName, isHost: true, connected: true }],
+      scoringMode: null,
     },
     events: [{ type: "RoomCreated", roomCode: command.roomCode }],
   };

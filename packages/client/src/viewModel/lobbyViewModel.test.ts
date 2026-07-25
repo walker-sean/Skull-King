@@ -9,6 +9,7 @@ const roomState: RoomState = {
     { name: "Alice", isHost: true, connected: true },
     { name: "Bob", isHost: false, connected: true },
   ],
+  scoringMode: null,
 };
 
 describe("selectLobbyView", () => {
@@ -31,5 +32,39 @@ describe("selectLobbyView", () => {
   it("reports whether the local Player is the Host", () => {
     expect(selectLobbyView(roomState, "Alice").isSelfHost).toBe(true);
     expect(selectLobbyView(roomState, "Bob").isSelfHost).toBe(false);
+  });
+
+  it("passes through the Scoring Mode unchanged", () => {
+    expect(selectLobbyView(roomState, "Alice").scoringMode).toBeNull();
+    expect(
+      selectLobbyView({ ...roomState, scoringMode: "Rascal" }, "Alice").scoringMode,
+    ).toBe("Rascal");
+  });
+
+  it("blocks starting the Game with fewer than 3 Players", () => {
+    expect(selectLobbyView(roomState, "Alice").startGameBlockedReason).toBe("TooFewPlayers");
+  });
+
+  it("does not block starting the Game with a Player count between 3 and 8", () => {
+    const room: RoomState = {
+      ...roomState,
+      players: [
+        ...roomState.players,
+        { name: "Carol", isHost: false, connected: true },
+      ],
+    };
+    expect(selectLobbyView(room, "Alice").startGameBlockedReason).toBeNull();
+  });
+
+  it("blocks starting the Game with more than 8 Players", () => {
+    const room: RoomState = {
+      ...roomState,
+      players: Array.from({ length: 9 }, (_, index) => ({
+        name: `Player${index + 1}`,
+        isHost: index === 0,
+        connected: true,
+      })),
+    };
+    expect(selectLobbyView(room, "Alice").startGameBlockedReason).toBe("TooManyPlayers");
   });
 });
