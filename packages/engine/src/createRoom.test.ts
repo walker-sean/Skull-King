@@ -11,7 +11,7 @@ describe("createRoom", () => {
       players: [{ name: "Alice", isHost: true, connected: true }],
       scoringMode: null,
     });
-    expect(result.events).toEqual([{ type: "RoomCreated", roomCode: "ABCD" }]);
+    expect(result.events).toEqual([{ type: "RoomCreated", roomCode: "ABCD", hostName: "Alice" }]);
   });
 
   it("trims whitespace from the host name", () => {

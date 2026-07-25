@@ -62,9 +62,9 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
 
       store.saveRoom(result.state);
       void socket.join(result.state.roomCode);
-      const hostPlayerName = result.state.players.find((player) => player.isHost)?.name;
-      if (hostPlayerName !== undefined) {
-        session = { roomCode: result.state.roomCode, playerName: hostPlayerName };
+      const roomCreated = result.events.find((event) => event.type === "RoomCreated");
+      if (roomCreated !== undefined) {
+        session = { roomCode: result.state.roomCode, playerName: roomCreated.hostName };
       }
       callback({ ok: true, state: result.state });
       io.to(result.state.roomCode).emit("roomState", result.state);
@@ -82,9 +82,9 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
 
       store.saveRoom(result.state);
       void socket.join(normalizedCode);
-      const playerName = result.state.players.at(-1)?.name;
-      if (playerName !== undefined) {
-        session = { roomCode: normalizedCode, playerName };
+      const playerJoined = result.events.find((event) => event.type === "PlayerJoined");
+      if (playerJoined !== undefined) {
+        session = { roomCode: normalizedCode, playerName: playerJoined.playerName };
       }
       callback({ ok: true, state: result.state });
       io.to(normalizedCode).emit("roomState", result.state);

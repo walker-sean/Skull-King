@@ -4,43 +4,40 @@ import {
   type EngineResult,
   type RoomState,
   type StartGameCommand,
+  type StartGameRejectedReason,
 } from "@skull-king/shared";
+
+function rejected(
+  state: RoomState | null,
+  roomCode: string,
+  reason: StartGameRejectedReason,
+): EngineResult {
+  return {
+    state,
+    events: [{ type: "StartGameRejected", roomCode, reason }],
+  };
+}
 
 export function startGame(state: RoomState | null, command: StartGameCommand): EngineResult {
   if (state === null) {
-    return {
-      state: null,
-      events: [{ type: "StartGameRejected", roomCode: command.roomCode, reason: "RoomNotFound" }],
-    };
+    return rejected(null, command.roomCode, "RoomNotFound");
   }
 
   const host = state.players.find((player) => player.isHost);
   if (host === undefined || host.name !== command.actorName) {
-    return {
-      state,
-      events: [{ type: "StartGameRejected", roomCode: command.roomCode, reason: "NotHost" }],
-    };
+    return rejected(state, command.roomCode, "NotHost");
   }
 
   if (state.status !== "Lobby") {
-    return {
-      state,
-      events: [{ type: "StartGameRejected", roomCode: command.roomCode, reason: "RoomNotInLobby" }],
-    };
+    return rejected(state, command.roomCode, "RoomNotInLobby");
   }
 
   if (state.players.length < MIN_PLAYERS_TO_START) {
-    return {
-      state,
-      events: [{ type: "StartGameRejected", roomCode: command.roomCode, reason: "TooFewPlayers" }],
-    };
+    return rejected(state, command.roomCode, "TooFewPlayers");
   }
 
   if (state.players.length > MAX_PLAYERS_TO_START) {
-    return {
-      state,
-      events: [{ type: "StartGameRejected", roomCode: command.roomCode, reason: "TooManyPlayers" }],
-    };
+    return rejected(state, command.roomCode, "TooManyPlayers");
   }
 
   return {

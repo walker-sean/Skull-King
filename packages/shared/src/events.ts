@@ -12,6 +12,7 @@ export type StartGameRejectedReason =
 export interface RoomCreatedEvent {
   type: "RoomCreated";
   roomCode: string;
+  hostName: string;
 }
 
 export interface RoomCreateRejectedEvent {

@@ -18,6 +18,6 @@ export function createRoom(command: CreateRoomCommand): EngineResult {
       players: [{ name: hostName, isHost: true, connected: true }],
       scoringMode: null,
     },
-    events: [{ type: "RoomCreated", roomCode: command.roomCode }],
+    events: [{ type: "RoomCreated", roomCode: command.roomCode, hostName }],
   };
 }
