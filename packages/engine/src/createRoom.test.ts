@@ -8,7 +8,7 @@ describe("createRoom", () => {
     expect(result.state).toEqual({
       roomCode: "ABCD",
       status: "Lobby",
-      players: [{ name: "Alice", isHost: true, connected: true, hand: [] }],
+      players: [{ name: "Alice", isHost: true, connected: true, hand: [], bid: null }],
       scoringMode: null,
       currentRound: null,
     });

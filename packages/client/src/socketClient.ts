@@ -11,6 +11,7 @@ export interface SocketClient {
   createRoom(hostName: string): Promise<CommandResponse>;
   joinRoom(roomCode: string, displayName: string): Promise<CommandResponse>;
   startGame(roomCode: string, scoringMode: ScoringMode): Promise<CommandResponse>;
+  submitBid(roomCode: string, bid: number): Promise<CommandResponse>;
   onRoomState(handler: (state: RoomState) => void): () => void;
   disconnect(): void;
 }
@@ -34,6 +35,12 @@ export function createSocketClient(url: string): SocketClient {
     startGame(roomCode: string, scoringMode: ScoringMode): Promise<CommandResponse> {
       return new Promise((resolve) => {
         socket.emit("startGame", { roomCode, scoringMode }, resolve);
+      });
+    },
+
+    submitBid(roomCode: string, bid: number): Promise<CommandResponse> {
+      return new Promise((resolve) => {
+        socket.emit("submitBid", { roomCode, bid }, resolve);
       });
     },
 

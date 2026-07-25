@@ -25,7 +25,7 @@ function connectClient(port: number): Promise<Client> {
 
 function emit<Req>(
   socket: Client,
-  event: "createRoom" | "joinRoom" | "startGame",
+  event: "createRoom" | "joinRoom" | "startGame" | "submitBid",
   request: Req,
 ): Promise<CommandResponse> {
   return new Promise((resolve) => {
@@ -79,7 +79,7 @@ describe("createRealtimeServer", () => {
     if (!response.ok) throw new Error("expected success");
     expect(response.state.status).toBe("Lobby");
     expect(response.state.players).toEqual([
-      { name: "Alice", isHost: true, connected: true, hand: [] },
+      { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
     ]);
     expect(response.state.roomCode).toHaveLength(4);
   });
@@ -100,8 +100,8 @@ describe("createRealtimeServer", () => {
     expect(joinResponse.ok).toBe(true);
     if (!joinResponse.ok) throw new Error("expected success");
     expect(joinResponse.state.players).toEqual([
-      { name: "Alice", isHost: true, connected: true, hand: [] },
-      { name: "Bob", isHost: false, connected: true, hand: [] },
+      { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
+      { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
     ]);
 
     const broadcastState = await broadcastReceived;
@@ -295,6 +295,76 @@ describe("createRealtimeServer", () => {
       type: "StartGameRejected",
       roomCode,
       reason: "NotHost",
+    });
+  });
+
+  async function startedRoomOf3(): Promise<{ host: Client; bob: Client; carol: Client; roomCode: string }> {
+    const host = await newClient();
+    const created = await emit(host, "createRoom", { hostName: "Alice" });
+    if (!created.ok) throw new Error("expected success");
+    const { roomCode } = created.state;
+    const bob = await newClient();
+    await emit(bob, "joinRoom", { roomCode, displayName: "Bob" });
+    const carol = await newClient();
+    await emit(carol, "joinRoom", { roomCode, displayName: "Carol" });
+    await emit(host, "startGame", { roomCode, scoringMode: "Traditional" });
+    return { host, bob, carol, roomCode };
+  }
+
+  it("keeps a submitted Bid hidden from other Players until everyone has bid, then reveals all at once", async () => {
+    const { host, bob, carol, roomCode } = await startedRoomOf3();
+
+    const aliceResponse = await emit(host, "submitBid", { roomCode, bid: 1 });
+    expect(aliceResponse.ok).toBe(true);
+    if (!aliceResponse.ok) throw new Error("expected success");
+    expect(aliceResponse.state.players.find((p) => p.name === "Alice")?.bid).toBe(1);
+
+    const bobResponse = await emit(bob, "submitBid", { roomCode, bid: 0 });
+    expect(bobResponse.ok).toBe(true);
+    if (!bobResponse.ok) throw new Error("expected success");
+    expect(bobResponse.state.players.find((p) => p.name === "Alice")?.bid).toBeNull();
+    expect(bobResponse.state.players.find((p) => p.name === "Bob")?.bid).toBe(0);
+
+    const hostSeesReveal = new Promise<RoomState>((resolve) => {
+      host.on("roomState", (state) => {
+        if (state.players.every((p) => p.bid !== null)) resolve(state);
+      });
+    });
+    const carolResponse = await emit(carol, "submitBid", { roomCode, bid: 1 });
+    expect(carolResponse.ok).toBe(true);
+    if (!carolResponse.ok) throw new Error("expected success");
+    expect(carolResponse.state.players.find((p) => p.name === "Alice")?.bid).toBe(1);
+    expect(carolResponse.state.players.find((p) => p.name === "Bob")?.bid).toBe(0);
+    expect(carolResponse.state.players.find((p) => p.name === "Carol")?.bid).toBe(1);
+
+    const hostRevealedState = await hostSeesReveal;
+    expect(hostRevealedState.players.find((p) => p.name === "Bob")?.bid).toBe(0);
+    expect(hostRevealedState.players.find((p) => p.name === "Carol")?.bid).toBe(1);
+  });
+
+  it("rejects a second Bid from the same Player, leaving their original Bid intact", async () => {
+    const { host, roomCode } = await startedRoomOf3();
+    await emit(host, "submitBid", { roomCode, bid: 1 });
+
+    const response = await emit(host, "submitBid", { roomCode, bid: 0 });
+
+    expect(response.ok).toBe(false);
+    if (response.ok) throw new Error("expected rejection");
+    expect(response.event).toEqual({ type: "SubmitBidRejected", roomCode, reason: "AlreadyBid" });
+  });
+
+  it("rejects a Bid from a socket that never joined the Room", async () => {
+    const { roomCode } = await startedRoomOf3();
+    const stranger = await newClient();
+
+    const response = await emit(stranger, "submitBid", { roomCode, bid: 1 });
+
+    expect(response.ok).toBe(false);
+    if (response.ok) throw new Error("expected rejection");
+    expect(response.event).toEqual({
+      type: "SubmitBidRejected",
+      roomCode,
+      reason: "PlayerNotFound",
     });
   });
 });

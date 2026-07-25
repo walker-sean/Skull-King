@@ -15,6 +15,7 @@ function createMockSocketClient(overrides: Partial<SocketClient> = {}): SocketCl
     createRoom: vi.fn(),
     joinRoom: vi.fn(),
     startGame: vi.fn(),
+    submitBid: vi.fn(),
     onRoomState: vi.fn((handler) => {
       roomStateHandler = handler;
       return () => {
@@ -31,7 +32,7 @@ function createMockSocketClient(overrides: Partial<SocketClient> = {}): SocketCl
 const lobbyState: RoomState = {
   roomCode: "ABCD",
   status: "Lobby",
-  players: [{ name: "Alice", isHost: true, connected: true, hand: [] }],
+  players: [{ name: "Alice", isHost: true, connected: true, hand: [], bid: null }],
   scoringMode: null,
   currentRound: null,
 };
@@ -62,7 +63,7 @@ describe("App", () => {
   it("joins a Room and shows the Lobby roster on success", async () => {
     const joinedState: RoomState = {
       ...lobbyState,
-      players: [...lobbyState.players, { name: "Bob", isHost: false, connected: true, hand: [] }],
+      players: [...lobbyState.players, { name: "Bob", isHost: false, connected: true, hand: [], bid: null }],
     };
     const socketClient = createMockSocketClient({
       joinRoom: vi.fn().mockResolvedValue({ ok: true, state: joinedState }),
@@ -107,7 +108,7 @@ describe("App", () => {
 
     const updated: RoomState = {
       ...lobbyState,
-      players: [...lobbyState.players, { name: "Bob", isHost: false, connected: true, hand: [] }],
+      players: [...lobbyState.players, { name: "Bob", isHost: false, connected: true, hand: [], bid: null }],
     };
     (socketClient as unknown as { emitRoomState: (s: RoomState) => void }).emitRoomState(updated);
 
@@ -133,8 +134,8 @@ describe("App", () => {
       ...lobbyState,
       players: [
         ...lobbyState.players,
-        { name: "Bob", isHost: false, connected: true, hand: [] },
-        { name: "Carol", isHost: false, connected: true, hand: [] },
+        { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
+        { name: "Carol", isHost: false, connected: true, hand: [], bid: null },
       ],
     };
     const startedState: RoomState = {
@@ -165,8 +166,8 @@ describe("App", () => {
       ...lobbyState,
       players: [
         ...lobbyState.players,
-        { name: "Bob", isHost: false, connected: true, hand: [] },
-        { name: "Carol", isHost: false, connected: true, hand: [] },
+        { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
+        { name: "Carol", isHost: false, connected: true, hand: [], bid: null },
       ],
     };
     const socketClient = createMockSocketClient({

@@ -44,12 +44,37 @@ export interface StartGameRejectedEvent {
   reason: StartGameRejectedReason;
 }
 
+export type SubmitBidRejectedReason =
+  | "RoomNotFound"
+  | "RoomNotActive"
+  | "PlayerNotFound"
+  | "AlreadyBid"
+  | "InvalidBid";
+
+export interface BidSubmittedEvent {
+  type: "BidSubmitted";
+  roomCode: string;
+  playerName: string;
+}
+
+export interface SubmitBidRejectedEvent {
+  type: "SubmitBidRejected";
+  roomCode: string;
+  reason: SubmitBidRejectedReason;
+}
+
 export type DomainEvent =
   | RoomCreatedEvent
   | RoomCreateRejectedEvent
   | PlayerJoinedEvent
   | JoinRejectedEvent
   | GameStartedEvent
-  | StartGameRejectedEvent;
+  | StartGameRejectedEvent
+  | BidSubmittedEvent
+  | SubmitBidRejectedEvent;
 
-export type RejectionEvent = RoomCreateRejectedEvent | JoinRejectedEvent | StartGameRejectedEvent;
+export type RejectionEvent =
+  | RoomCreateRejectedEvent
+  | JoinRejectedEvent
+  | StartGameRejectedEvent
+  | SubmitBidRejectedEvent;

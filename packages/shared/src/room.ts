@@ -13,6 +13,8 @@ export interface Player {
   connected: boolean;
   /** This Player's dealt cards for the current Round; empty before dealing happens. */
   hand: Card[];
+  /** This Player's private Bid for the current Round; null until they've submitted one. */
+  bid: number | null;
 }
 
 export interface RoomState {

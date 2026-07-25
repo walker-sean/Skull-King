@@ -9,8 +9,8 @@ const lobbyRoom: RoomState = {
   roomCode: "ABCD",
   status: "Lobby",
   players: [
-    { name: "Alice", isHost: true, connected: true, hand: [] },
-    { name: "Bob", isHost: false, connected: true, hand: [] },
+    { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
+    { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
   ],
   scoringMode: null,
   currentRound: null,
@@ -46,7 +46,10 @@ describe("RoomStore", () => {
     store.saveRoom(lobbyRoom);
     const updated: RoomState = {
       ...lobbyRoom,
-      players: [...lobbyRoom.players, { name: "Cara", isHost: false, connected: true, hand: [] }],
+      players: [
+        ...lobbyRoom.players,
+        { name: "Cara", isHost: false, connected: true, hand: [], bid: null },
+      ],
     };
     store.saveRoom(updated);
 
@@ -71,8 +74,8 @@ describe("RoomStore", () => {
       roomCode: "WXYZ",
       status: "Completed",
       players: [
-        { name: "Alice", isHost: true, connected: true, hand: [] },
-        { name: "Bob", isHost: false, connected: false, hand: [] },
+        { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
+        { name: "Bob", isHost: false, connected: false, hand: [], bid: null },
       ],
       scoringMode: "Rascal",
       currentRound: 10,

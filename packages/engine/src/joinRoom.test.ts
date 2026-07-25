@@ -6,7 +6,7 @@ function lobbyWithHost(): RoomState {
   return {
     roomCode: "ABCD",
     status: "Lobby",
-    players: [{ name: "Alice", isHost: true, connected: true, hand: [] }],
+    players: [{ name: "Alice", isHost: true, connected: true, hand: [], bid: null }],
     scoringMode: null,
     currentRound: null,
   };
@@ -17,8 +17,8 @@ describe("joinRoom", () => {
     const result = joinRoom(lobbyWithHost(), { type: "JoinRoom", roomCode: "ABCD", displayName: "Bob" });
 
     expect(result.state?.players).toEqual([
-      { name: "Alice", isHost: true, connected: true, hand: [] },
-      { name: "Bob", isHost: false, connected: true, hand: [] },
+      { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
+      { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
     ]);
     expect(result.events).toEqual([{ type: "PlayerJoined", roomCode: "ABCD", playerName: "Bob" }]);
   });

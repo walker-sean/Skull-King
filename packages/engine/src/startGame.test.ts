@@ -8,6 +8,7 @@ function playersNamed(count: number): Player[] {
     isHost: index === 0,
     connected: true,
     hand: [],
+    bid: null,
   }));
 }
 

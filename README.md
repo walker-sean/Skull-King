@@ -6,7 +6,7 @@ See [CONTEXT.md](CONTEXT.md) for domain language and [docs/adr/](docs/adr/) for 
 
 ## Status
 
-Early development. Implemented so far: Room creation & join (Lobby), Start Game (player-count gate + Scoring Mode selection), and Round dealing with the Hand Size Cap.
+Early development. Implemented so far: Room creation & join (Lobby), Start Game (player-count gate + Scoring Mode selection), Round dealing with the Hand Size Cap, and private simultaneous Bidding (hidden until every Player has bid, then revealed to all at once).
 
 ## Structure
 

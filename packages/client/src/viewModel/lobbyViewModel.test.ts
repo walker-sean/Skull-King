@@ -6,8 +6,8 @@ const roomState: RoomState = {
   roomCode: "ABCD",
   status: "Lobby",
   players: [
-    { name: "Alice", isHost: true, connected: true, hand: [] },
-    { name: "Bob", isHost: false, connected: true, hand: [] },
+    { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
+    { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
   ],
   scoringMode: null,
   currentRound: null,
@@ -25,8 +25,8 @@ describe("selectLobbyView", () => {
     const view = selectLobbyView(roomState, "Bob");
 
     expect(view.players).toEqual([
-      { name: "Alice", isHost: true, connected: true, hand: [], isSelf: false },
-      { name: "Bob", isHost: false, connected: true, hand: [], isSelf: true },
+      { name: "Alice", isHost: true, connected: true, hand: [], bid: null, isSelf: false },
+      { name: "Bob", isHost: false, connected: true, hand: [], bid: null, isSelf: true },
     ]);
   });
 
@@ -51,7 +51,7 @@ describe("selectLobbyView", () => {
       ...roomState,
       players: [
         ...roomState.players,
-        { name: "Carol", isHost: false, connected: true, hand: [] },
+        { name: "Carol", isHost: false, connected: true, hand: [], bid: null },
       ],
     };
     expect(selectLobbyView(room, "Alice").startGameBlockedReason).toBeNull();
@@ -65,6 +65,7 @@ describe("selectLobbyView", () => {
         isHost: index === 0,
         connected: true,
         hand: [],
+        bid: null,
       })),
     };
     expect(selectLobbyView(room, "Alice").startGameBlockedReason).toBe("TooManyPlayers");

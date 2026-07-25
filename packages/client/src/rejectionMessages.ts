@@ -8,4 +8,8 @@ export const REJECTION_MESSAGES: Record<RejectionEvent["reason"], string> = {
   TooFewPlayers: "Need at least 3 Players to start.",
   TooManyPlayers: "At most 8 Players can play at once.",
   NotHost: "Only the Host can start the Game.",
+  RoomNotActive: "The Round isn't active yet.",
+  PlayerNotFound: "You're not recognized as a Player in this Room.",
+  AlreadyBid: "You've already submitted your Bid for this Round.",
+  InvalidBid: "That Bid isn't valid for your hand size.",
 };

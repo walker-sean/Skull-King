@@ -5,3 +5,4 @@ export * from "./joinRoom.js";
 export * from "./startGame.js";
 export * from "./deck.js";
 export * from "./dealing.js";
+export * from "./bidding.js";

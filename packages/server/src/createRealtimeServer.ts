@@ -1,6 +1,6 @@
 import { createServer, type Server as HttpServer } from "node:http";
 import { Server as SocketIoServer } from "socket.io";
-import { createRoom, generateRoomCode, joinRoom, startGame } from "@skull-king/engine";
+import { createRoom, generateRoomCode, joinRoom, startGame, submitBid } from "@skull-king/engine";
 import type { RoomStore } from "@skull-king/persistence";
 import type {
   ClientToServerEvents,
@@ -9,7 +9,7 @@ import type {
   RoomState,
   ServerToClientEvents,
 } from "@skull-king/shared";
-import { redactHandsFor } from "./redactRoomState.js";
+import { redactRoomStateFor } from "./redactRoomState.js";
 
 export interface RealtimeServer {
   httpServer: HttpServer;
@@ -31,7 +31,8 @@ function isRejectionEvent(event: DomainEvent): event is RejectionEvent {
   return (
     event.type === "RoomCreateRejected" ||
     event.type === "JoinRejected" ||
-    event.type === "StartGameRejected"
+    event.type === "StartGameRejected" ||
+    event.type === "SubmitBidRejected"
   );
 }
 
@@ -61,7 +62,7 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
         destinationSession !== undefined && destinationSession.roomCode === roomCode
           ? destinationSession.playerName
           : null;
-      destination.emit("roomState", redactHandsFor(state, viewerName));
+      destination.emit("roomState", redactRoomStateFor(state, viewerName));
     }
   }
 
@@ -85,7 +86,7 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
           playerName: roomCreated.hostName,
         });
       }
-      callback({ ok: true, state: redactHandsFor(result.state, roomCreated?.hostName ?? null) });
+      callback({ ok: true, state: redactRoomStateFor(result.state, roomCreated?.hostName ?? null) });
       void broadcastRoomState(result.state.roomCode, result.state);
     });
 
@@ -108,7 +109,7 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
           playerName: playerJoined.playerName,
         });
       }
-      callback({ ok: true, state: redactHandsFor(result.state, playerJoined?.playerName ?? null) });
+      callback({ ok: true, state: redactRoomStateFor(result.state, playerJoined?.playerName ?? null) });
       void broadcastRoomState(normalizedCode, result.state);
     });
 
@@ -130,7 +131,29 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
       }
 
       store.saveRoom(result.state);
-      callback({ ok: true, state: redactHandsFor(result.state, actorName) });
+      callback({ ok: true, state: redactRoomStateFor(result.state, actorName) });
+      void broadcastRoomState(normalizedCode, result.state);
+    });
+
+    socket.on("submitBid", ({ roomCode, bid }, callback) => {
+      const normalizedCode = roomCode.trim().toUpperCase();
+      const state = store.loadRoom(normalizedCode);
+      const session = sessionsBySocketId.get(socket.id);
+      const actorName = session !== undefined && session.roomCode === normalizedCode ? session.playerName : null;
+      const result = submitBid(state, {
+        type: "SubmitBid",
+        roomCode: normalizedCode,
+        bid,
+        actorName,
+      });
+
+      if (result.state === null || result.events.some(isRejectionEvent)) {
+        callback({ ok: false, event: firstRejection(result.events) });
+        return;
+      }
+
+      store.saveRoom(result.state);
+      callback({ ok: true, state: redactRoomStateFor(result.state, actorName) });
       void broadcastRoomState(normalizedCode, result.state);
     });
 
