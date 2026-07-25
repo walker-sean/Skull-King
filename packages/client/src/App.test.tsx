@@ -8,7 +8,9 @@ import type { SocketClient } from "./socketClient.js";
 
 afterEach(() => cleanup());
 
-function createMockSocketClient(overrides: Partial<SocketClient> = {}): SocketClient {
+function createMockSocketClient(
+  overrides: Partial<SocketClient> = {},
+): SocketClient {
   let roomStateHandler: ((state: RoomState) => void) | null = null;
 
   return {
@@ -24,7 +26,9 @@ function createMockSocketClient(overrides: Partial<SocketClient> = {}): SocketCl
     }),
     disconnect: vi.fn(),
     // Test-only escape hatch to simulate a broadcast arriving from the server.
-    ...({ emitRoomState: (state: RoomState) => roomStateHandler?.(state) } as object),
+    ...({
+      emitRoomState: (state: RoomState) => roomStateHandler?.(state),
+    } as object),
     ...overrides,
   } as SocketClient;
 }
@@ -32,7 +36,9 @@ function createMockSocketClient(overrides: Partial<SocketClient> = {}): SocketCl
 const lobbyState: RoomState = {
   roomCode: "ABCD",
   status: "Lobby",
-  players: [{ name: "Alice", isHost: true, connected: true, hand: [], bid: null }],
+  players: [
+    { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
+  ],
   scoringMode: null,
   currentRound: null,
   currentTrick: null,
@@ -43,8 +49,12 @@ describe("App", () => {
   it("shows Create Room and Join Room sections on first render", () => {
     render(<App socketClient={createMockSocketClient()} />);
 
-    expect(screen.getByRole("heading", { name: /create a room/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /join a room/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /create a room/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /join a room/i }),
+    ).toBeInTheDocument();
   });
 
   it("creates a Room and shows the Lobby roster on success", async () => {
@@ -53,7 +63,9 @@ describe("App", () => {
     });
     render(<App socketClient={socketClient} />);
 
-    fireEvent.change(screen.getByLabelText(/your name/i), { target: { value: "Alice" } });
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /create room/i }));
 
     expect(await screen.findByText("ABCD")).toBeInTheDocument();
@@ -65,15 +77,22 @@ describe("App", () => {
   it("joins a Room and shows the Lobby roster on success", async () => {
     const joinedState: RoomState = {
       ...lobbyState,
-      players: [...lobbyState.players, { name: "Bob", isHost: false, connected: true, hand: [], bid: null }],
+      players: [
+        ...lobbyState.players,
+        { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
+      ],
     };
     const socketClient = createMockSocketClient({
       joinRoom: vi.fn().mockResolvedValue({ ok: true, state: joinedState }),
     });
     render(<App socketClient={socketClient} />);
 
-    fireEvent.change(screen.getByLabelText(/room code/i), { target: { value: "ABCD" } });
-    fireEvent.change(screen.getByLabelText(/display name/i), { target: { value: "Bob" } });
+    fireEvent.change(screen.getByLabelText(/room code/i), {
+      target: { value: "ABCD" },
+    });
+    fireEvent.change(screen.getByLabelText(/display name/i), {
+      target: { value: "Bob" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /join room/i }));
 
     expect(await screen.findByText("Bob")).toBeInTheDocument();
@@ -90,12 +109,20 @@ describe("App", () => {
     });
     render(<App socketClient={socketClient} />);
 
-    fireEvent.change(screen.getByLabelText(/room code/i), { target: { value: "ABCD" } });
-    fireEvent.change(screen.getByLabelText(/display name/i), { target: { value: "Alice" } });
+    fireEvent.change(screen.getByLabelText(/room code/i), {
+      target: { value: "ABCD" },
+    });
+    fireEvent.change(screen.getByLabelText(/display name/i), {
+      target: { value: "Alice" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /join room/i }));
 
-    expect(await screen.findByText(/that name is already taken/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /join a room/i })).toBeInTheDocument();
+    expect(
+      await screen.findByText(/that name is already taken/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /join a room/i }),
+    ).toBeInTheDocument();
   });
 
   it("live-updates the Lobby roster when the server broadcasts a new Room state", async () => {
@@ -104,15 +131,22 @@ describe("App", () => {
     });
     render(<App socketClient={socketClient} />);
 
-    fireEvent.change(screen.getByLabelText(/your name/i), { target: { value: "Alice" } });
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /create room/i }));
     await screen.findByText("ABCD");
 
     const updated: RoomState = {
       ...lobbyState,
-      players: [...lobbyState.players, { name: "Bob", isHost: false, connected: true, hand: [], bid: null }],
+      players: [
+        ...lobbyState.players,
+        { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
+      ],
     };
-    (socketClient as unknown as { emitRoomState: (s: RoomState) => void }).emitRoomState(updated);
+    (
+      socketClient as unknown as { emitRoomState: (s: RoomState) => void }
+    ).emitRoomState(updated);
 
     expect(await screen.findByText("Bob")).toBeInTheDocument();
   });
@@ -123,7 +157,9 @@ describe("App", () => {
     });
     render(<App socketClient={socketClient} />);
 
-    fireEvent.change(screen.getByLabelText(/your name/i), { target: { value: "Alice" } });
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /create room/i }));
     await screen.findByText("ABCD");
 
@@ -146,16 +182,22 @@ describe("App", () => {
       scoringMode: "Rascal",
     };
     const socketClient = createMockSocketClient({
-      createRoom: vi.fn().mockResolvedValue({ ok: true, state: threePlayerState }),
+      createRoom: vi
+        .fn()
+        .mockResolvedValue({ ok: true, state: threePlayerState }),
       startGame: vi.fn().mockResolvedValue({ ok: true, state: startedState }),
     });
     render(<App socketClient={socketClient} />);
 
-    fireEvent.change(screen.getByLabelText(/your name/i), { target: { value: "Alice" } });
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /create room/i }));
     await screen.findByText("ABCD");
 
-    fireEvent.change(screen.getByLabelText(/scoring mode/i), { target: { value: "Rascal" } });
+    fireEvent.change(screen.getByLabelText(/scoring mode/i), {
+      target: { value: "Rascal" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /start game/i }));
 
     expect(await screen.findByText("Active")).toBeInTheDocument();
@@ -173,21 +215,31 @@ describe("App", () => {
       ],
     };
     const socketClient = createMockSocketClient({
-      createRoom: vi.fn().mockResolvedValue({ ok: true, state: threePlayerState }),
+      createRoom: vi
+        .fn()
+        .mockResolvedValue({ ok: true, state: threePlayerState }),
       startGame: vi.fn().mockResolvedValue({
         ok: false,
-        event: { type: "StartGameRejected", roomCode: "ABCD", reason: "RoomNotInLobby" },
+        event: {
+          type: "StartGameRejected",
+          roomCode: "ABCD",
+          reason: "RoomNotInLobby",
+        },
       }),
     });
     render(<App socketClient={socketClient} />);
 
-    fireEvent.change(screen.getByLabelText(/your name/i), { target: { value: "Alice" } });
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /create room/i }));
     await screen.findByText("ABCD");
 
     fireEvent.click(screen.getByRole("button", { name: /start game/i }));
 
-    expect(await screen.findByText(/this room has already started/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/this room has already started/i),
+    ).toBeInTheDocument();
     expect(screen.getByText("Lobby")).toBeInTheDocument();
   });
 });

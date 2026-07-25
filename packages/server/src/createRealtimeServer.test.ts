@@ -18,7 +18,9 @@ type Client = ClientSocket<ServerToClientEvents, ClientToServerEvents>;
 
 function connectClient(port: number): Promise<Client> {
   return new Promise((resolve, reject) => {
-    const socket: Client = ioClient(`http://localhost:${port}`, { forceNew: true });
+    const socket: Client = ioClient(`http://localhost:${port}`, {
+      forceNew: true,
+    });
     socket.on("connect", () => resolve(socket));
     socket.on("connect_error", reject);
   });
@@ -96,7 +98,10 @@ describe("createRealtimeServer", () => {
     });
 
     const joiner = await newClient();
-    const joinResponse = await emit(joiner, "joinRoom", { roomCode, displayName: "Bob" });
+    const joinResponse = await emit(joiner, "joinRoom", {
+      roomCode,
+      displayName: "Bob",
+    });
 
     expect(joinResponse.ok).toBe(true);
     if (!joinResponse.ok) throw new Error("expected success");
@@ -112,11 +117,18 @@ describe("createRealtimeServer", () => {
   it("rejects joining a Room Code that doesn't exist", async () => {
     const joiner = await newClient();
 
-    const response = await emit(joiner, "joinRoom", { roomCode: "ZZZZ", displayName: "Bob" });
+    const response = await emit(joiner, "joinRoom", {
+      roomCode: "ZZZZ",
+      displayName: "Bob",
+    });
 
     expect(response.ok).toBe(false);
     if (response.ok) throw new Error("expected rejection");
-    expect(response.event).toEqual({ type: "JoinRejected", roomCode: "ZZZZ", reason: "RoomNotFound" });
+    expect(response.event).toEqual({
+      type: "JoinRejected",
+      roomCode: "ZZZZ",
+      reason: "RoomNotFound",
+    });
   });
 
   it("rejects a display name already taken in the Room", async () => {
@@ -159,7 +171,10 @@ describe("createRealtimeServer", () => {
     port = (server.httpServer.address() as AddressInfo).port;
 
     const joiner = await newClient();
-    const response = await emit(joiner, "joinRoom", { roomCode, displayName: "Bob" });
+    const response = await emit(joiner, "joinRoom", {
+      roomCode,
+      displayName: "Bob",
+    });
 
     expect(response.ok).toBe(true);
     if (!response.ok) throw new Error("expected success");
@@ -172,7 +187,10 @@ describe("createRealtimeServer", () => {
     if (!created.ok) throw new Error("expected success");
     const { roomCode } = created.state;
     await emit(await newClient(), "joinRoom", { roomCode, displayName: "Bob" });
-    await emit(await newClient(), "joinRoom", { roomCode, displayName: "Carol" });
+    await emit(await newClient(), "joinRoom", {
+      roomCode,
+      displayName: "Carol",
+    });
 
     const broadcastReceived = new Promise<unknown>((resolve) => {
       host.on("roomState", (state) => {
@@ -180,7 +198,10 @@ describe("createRealtimeServer", () => {
       });
     });
 
-    const response = await emit(host, "startGame", { roomCode, scoringMode: "Traditional" });
+    const response = await emit(host, "startGame", {
+      roomCode,
+      scoringMode: "Traditional",
+    });
 
     expect(response.ok).toBe(true);
     if (!response.ok) throw new Error("expected success");
@@ -196,7 +217,10 @@ describe("createRealtimeServer", () => {
     const { roomCode } = created.state;
     const bob = await newClient();
     await emit(bob, "joinRoom", { roomCode, displayName: "Bob" });
-    await emit(await newClient(), "joinRoom", { roomCode, displayName: "Carol" });
+    await emit(await newClient(), "joinRoom", {
+      roomCode,
+      displayName: "Carol",
+    });
 
     const bobStateReceived = new Promise<RoomState>((resolve) => {
       bob.on("roomState", (state) => {
@@ -204,7 +228,10 @@ describe("createRealtimeServer", () => {
       });
     });
 
-    const response = await emit(host, "startGame", { roomCode, scoringMode: "Traditional" });
+    const response = await emit(host, "startGame", {
+      roomCode,
+      scoringMode: "Traditional",
+    });
     if (!response.ok) throw new Error("expected success");
 
     expect(response.state.currentRound).toBe(1);
@@ -215,9 +242,15 @@ describe("createRealtimeServer", () => {
 
     const bobState = await bobStateReceived;
     expect(bobState.currentRound).toBe(1);
-    expect(bobState.players.find((p) => p.name === "Bob")?.hand).toHaveLength(1);
-    expect(bobState.players.find((p) => p.name === "Alice")?.hand).toHaveLength(0);
-    expect(bobState.players.find((p) => p.name === "Carol")?.hand).toHaveLength(0);
+    expect(bobState.players.find((p) => p.name === "Bob")?.hand).toHaveLength(
+      1,
+    );
+    expect(bobState.players.find((p) => p.name === "Alice")?.hand).toHaveLength(
+      0,
+    );
+    expect(bobState.players.find((p) => p.name === "Carol")?.hand).toHaveLength(
+      0,
+    );
   });
 
   it("rejects starting the Game with fewer than 3 Players", async () => {
@@ -245,10 +278,16 @@ describe("createRealtimeServer", () => {
     if (!created.ok) throw new Error("expected success");
     const { roomCode } = created.state;
     await emit(await newClient(), "joinRoom", { roomCode, displayName: "Bob" });
-    await emit(await newClient(), "joinRoom", { roomCode, displayName: "Carol" });
+    await emit(await newClient(), "joinRoom", {
+      roomCode,
+      displayName: "Carol",
+    });
     await emit(host, "startGame", { roomCode, scoringMode: "Traditional" });
 
-    const response = await emit(host, "startGame", { roomCode, scoringMode: "Rascal" });
+    const response = await emit(host, "startGame", {
+      roomCode,
+      scoringMode: "Rascal",
+    });
 
     expect(response.ok).toBe(false);
     if (response.ok) throw new Error("expected rejection");
@@ -266,9 +305,15 @@ describe("createRealtimeServer", () => {
     const { roomCode } = created.state;
     const joiner = await newClient();
     await emit(joiner, "joinRoom", { roomCode, displayName: "Bob" });
-    await emit(await newClient(), "joinRoom", { roomCode, displayName: "Carol" });
+    await emit(await newClient(), "joinRoom", {
+      roomCode,
+      displayName: "Carol",
+    });
 
-    const response = await emit(joiner, "startGame", { roomCode, scoringMode: "Traditional" });
+    const response = await emit(joiner, "startGame", {
+      roomCode,
+      scoringMode: "Traditional",
+    });
 
     expect(response.ok).toBe(false);
     if (response.ok) throw new Error("expected rejection");
@@ -285,10 +330,16 @@ describe("createRealtimeServer", () => {
     if (!created.ok) throw new Error("expected success");
     const { roomCode } = created.state;
     await emit(await newClient(), "joinRoom", { roomCode, displayName: "Bob" });
-    await emit(await newClient(), "joinRoom", { roomCode, displayName: "Carol" });
+    await emit(await newClient(), "joinRoom", {
+      roomCode,
+      displayName: "Carol",
+    });
 
     const stranger = await newClient();
-    const response = await emit(stranger, "startGame", { roomCode, scoringMode: "Traditional" });
+    const response = await emit(stranger, "startGame", {
+      roomCode,
+      scoringMode: "Traditional",
+    });
 
     expect(response.ok).toBe(false);
     if (response.ok) throw new Error("expected rejection");
@@ -299,7 +350,12 @@ describe("createRealtimeServer", () => {
     });
   });
 
-  async function startedRoomOf3(): Promise<{ host: Client; bob: Client; carol: Client; roomCode: string }> {
+  async function startedRoomOf3(): Promise<{
+    host: Client;
+    bob: Client;
+    carol: Client;
+    roomCode: string;
+  }> {
     const host = await newClient();
     const created = await emit(host, "createRoom", { hostName: "Alice" });
     if (!created.ok) throw new Error("expected success");
@@ -318,13 +374,19 @@ describe("createRealtimeServer", () => {
     const aliceResponse = await emit(host, "submitBid", { roomCode, bid: 1 });
     expect(aliceResponse.ok).toBe(true);
     if (!aliceResponse.ok) throw new Error("expected success");
-    expect(aliceResponse.state.players.find((p) => p.name === "Alice")?.bid).toBe(1);
+    expect(
+      aliceResponse.state.players.find((p) => p.name === "Alice")?.bid,
+    ).toBe(1);
 
     const bobResponse = await emit(bob, "submitBid", { roomCode, bid: 0 });
     expect(bobResponse.ok).toBe(true);
     if (!bobResponse.ok) throw new Error("expected success");
-    expect(bobResponse.state.players.find((p) => p.name === "Alice")?.bid).toBeNull();
-    expect(bobResponse.state.players.find((p) => p.name === "Bob")?.bid).toBe(0);
+    expect(
+      bobResponse.state.players.find((p) => p.name === "Alice")?.bid,
+    ).toBeNull();
+    expect(bobResponse.state.players.find((p) => p.name === "Bob")?.bid).toBe(
+      0,
+    );
 
     const hostSeesReveal = new Promise<RoomState>((resolve) => {
       host.on("roomState", (state) => {
@@ -334,13 +396,23 @@ describe("createRealtimeServer", () => {
     const carolResponse = await emit(carol, "submitBid", { roomCode, bid: 1 });
     expect(carolResponse.ok).toBe(true);
     if (!carolResponse.ok) throw new Error("expected success");
-    expect(carolResponse.state.players.find((p) => p.name === "Alice")?.bid).toBe(1);
-    expect(carolResponse.state.players.find((p) => p.name === "Bob")?.bid).toBe(0);
-    expect(carolResponse.state.players.find((p) => p.name === "Carol")?.bid).toBe(1);
+    expect(
+      carolResponse.state.players.find((p) => p.name === "Alice")?.bid,
+    ).toBe(1);
+    expect(carolResponse.state.players.find((p) => p.name === "Bob")?.bid).toBe(
+      0,
+    );
+    expect(
+      carolResponse.state.players.find((p) => p.name === "Carol")?.bid,
+    ).toBe(1);
 
     const hostRevealedState = await hostSeesReveal;
-    expect(hostRevealedState.players.find((p) => p.name === "Bob")?.bid).toBe(0);
-    expect(hostRevealedState.players.find((p) => p.name === "Carol")?.bid).toBe(1);
+    expect(hostRevealedState.players.find((p) => p.name === "Bob")?.bid).toBe(
+      0,
+    );
+    expect(hostRevealedState.players.find((p) => p.name === "Carol")?.bid).toBe(
+      1,
+    );
   });
 
   it("rejects a second Bid from the same Player, leaving their original Bid intact", async () => {
@@ -351,7 +423,11 @@ describe("createRealtimeServer", () => {
 
     expect(response.ok).toBe(false);
     if (response.ok) throw new Error("expected rejection");
-    expect(response.event).toEqual({ type: "SubmitBidRejected", roomCode, reason: "AlreadyBid" });
+    expect(response.event).toEqual({
+      type: "SubmitBidRejected",
+      roomCode,
+      reason: "AlreadyBid",
+    });
   });
 
   it("rejects a Bid from a socket that never joined the Room", async () => {
@@ -384,12 +460,24 @@ describe("createRealtimeServer", () => {
       throw new Error("expected successful Bids");
     }
 
-    const aliceCard = aliceResponse.state.players.find((p) => p.name === "Alice")?.hand[0];
-    const bobCard = bobResponse.state.players.find((p) => p.name === "Bob")?.hand[0];
-    const carolCard = carolResponse.state.players.find((p) => p.name === "Carol")?.hand[0];
-    if (!aliceCard || !bobCard || !carolCard) throw new Error("expected dealt cards");
+    const aliceCard = aliceResponse.state.players.find(
+      (p) => p.name === "Alice",
+    )?.hand[0];
+    const bobCard = bobResponse.state.players.find((p) => p.name === "Bob")
+      ?.hand[0];
+    const carolCard = carolResponse.state.players.find(
+      (p) => p.name === "Carol",
+    )?.hand[0];
+    if (!aliceCard || !bobCard || !carolCard)
+      throw new Error("expected dealt cards");
 
-    return { host, bob, carol, roomCode, hands: { Alice: aliceCard, Bob: bobCard, Carol: carolCard } };
+    return {
+      host,
+      bob,
+      carol,
+      roomCode,
+      hands: { Alice: aliceCard, Bob: bobCard, Carol: carolCard },
+    };
   }
 
   it("rejects a play from a Player before their turn", async () => {
@@ -399,7 +487,11 @@ describe("createRealtimeServer", () => {
 
     expect(response.ok).toBe(false);
     if (response.ok) throw new Error("expected rejection");
-    expect(response.event).toEqual({ type: "PlayCardRejected", roomCode, reason: "NotYourTurn" });
+    expect(response.event).toEqual({
+      type: "PlayCardRejected",
+      roomCode,
+      reason: "NotYourTurn",
+    });
   });
 
   it("lets every Player see cards played into the current Trick, in play order", async () => {
@@ -411,11 +503,16 @@ describe("createRealtimeServer", () => {
       });
     });
 
-    const aliceResponse = await emit(host, "playCard", { roomCode, card: hands.Alice });
+    const aliceResponse = await emit(host, "playCard", {
+      roomCode,
+      card: hands.Alice,
+    });
     expect(aliceResponse.ok).toBe(true);
 
     const carolState = await carolSeesThePlay;
-    expect(carolState.currentTrick).toEqual([{ playerName: "Alice", card: hands.Alice }]);
+    expect(carolState.currentTrick).toEqual([
+      { playerName: "Alice", card: hands.Alice },
+    ]);
   });
 
   it("has the Trick's winner lead the next Trick, once every Player has played", async () => {
@@ -423,7 +520,10 @@ describe("createRealtimeServer", () => {
 
     await emit(host, "playCard", { roomCode, card: hands.Alice });
     await emit(bob, "playCard", { roomCode, card: hands.Bob });
-    const response = await emit(carol, "playCard", { roomCode, card: hands.Carol });
+    const response = await emit(carol, "playCard", {
+      roomCode,
+      card: hands.Carol,
+    });
 
     expect(response.ok).toBe(true);
     if (!response.ok) throw new Error("expected success");
@@ -444,8 +544,12 @@ describe("createRealtimeServer", () => {
 
     const pausedState = await hostSeesPause;
     expect(pausedState.status).toBe("Paused");
-    expect(pausedState.players.find((p) => p.name === "Bob")?.connected).toBe(false);
-    expect(pausedState.players.find((p) => p.name === "Alice")?.connected).toBe(true);
+    expect(pausedState.players.find((p) => p.name === "Bob")?.connected).toBe(
+      false,
+    );
+    expect(pausedState.players.find((p) => p.name === "Alice")?.connected).toBe(
+      true,
+    );
   });
 
   it("resumes a Paused Room once the disconnected Player reconnects, restoring their Bid and hand", async () => {
@@ -453,7 +557,9 @@ describe("createRealtimeServer", () => {
     await emit(host, "submitBid", { roomCode, bid: 1 });
     const bobBidResponse = await emit(bob, "submitBid", { roomCode, bid: 0 });
     if (!bobBidResponse.ok) throw new Error("expected success");
-    const bobHandBeforeDisconnect = bobBidResponse.state.players.find((p) => p.name === "Bob")?.hand;
+    const bobHandBeforeDisconnect = bobBidResponse.state.players.find(
+      (p) => p.name === "Bob",
+    )?.hand;
 
     const hostSeesPause = new Promise<void>((resolve) => {
       host.on("roomState", (state) => {
@@ -470,12 +576,17 @@ describe("createRealtimeServer", () => {
     });
 
     const bobReconnected = await newClient();
-    const reconnectResponse = await emit(bobReconnected, "joinRoom", { roomCode, displayName: "Bob" });
+    const reconnectResponse = await emit(bobReconnected, "joinRoom", {
+      roomCode,
+      displayName: "Bob",
+    });
 
     expect(reconnectResponse.ok).toBe(true);
     if (!reconnectResponse.ok) throw new Error("expected success");
     expect(reconnectResponse.state.status).toBe("Active");
-    const reconnectedBob = reconnectResponse.state.players.find((p) => p.name === "Bob");
+    const reconnectedBob = reconnectResponse.state.players.find(
+      (p) => p.name === "Bob",
+    );
     expect(reconnectedBob?.connected).toBe(true);
     expect(reconnectedBob?.bid).toBe(0);
     expect(reconnectedBob?.hand).toEqual(bobHandBeforeDisconnect);
@@ -488,11 +599,18 @@ describe("createRealtimeServer", () => {
     const { roomCode } = await startedRoomOf3();
 
     const stranger = await newClient();
-    const response = await emit(stranger, "joinRoom", { roomCode, displayName: "Alice" });
+    const response = await emit(stranger, "joinRoom", {
+      roomCode,
+      displayName: "Alice",
+    });
 
     expect(response.ok).toBe(false);
     if (response.ok) throw new Error("expected rejection");
-    expect(response.event).toEqual({ type: "JoinRejected", roomCode, reason: "AlreadyConnected" });
+    expect(response.event).toEqual({
+      type: "JoinRejected",
+      roomCode,
+      reason: "AlreadyConnected",
+    });
   });
 
   it("keeps a mid-Trick Paused Room's state intact across a simulated server restart", async () => {
@@ -523,17 +641,30 @@ describe("createRealtimeServer", () => {
     port = (server.httpServer.address() as AddressInfo).port;
 
     const aliceReconnected = await newClient();
-    await emit(aliceReconnected, "joinRoom", { roomCode, displayName: "Alice" });
+    await emit(aliceReconnected, "joinRoom", {
+      roomCode,
+      displayName: "Alice",
+    });
     const carolReconnected = await newClient();
-    await emit(carolReconnected, "joinRoom", { roomCode, displayName: "Carol" });
+    await emit(carolReconnected, "joinRoom", {
+      roomCode,
+      displayName: "Carol",
+    });
     const bobReconnected = await newClient();
-    const response = await emit(bobReconnected, "joinRoom", { roomCode, displayName: "Bob" });
+    const response = await emit(bobReconnected, "joinRoom", {
+      roomCode,
+      displayName: "Bob",
+    });
 
     expect(response.ok).toBe(true);
     if (!response.ok) throw new Error("expected success");
     expect(response.state.status).toBe("Active");
-    expect(response.state.currentTrick).toEqual([{ playerName: "Alice", card: hands.Alice }]);
-    expect(response.state.players.find((p) => p.name === "Bob")?.hand).toContainEqual(hands.Bob);
+    expect(response.state.currentTrick).toEqual([
+      { playerName: "Alice", card: hands.Alice },
+    ]);
+    expect(
+      response.state.players.find((p) => p.name === "Bob")?.hand,
+    ).toContainEqual(hands.Bob);
     expect(response.state.players.every((p) => p.connected)).toBe(true);
   });
 });

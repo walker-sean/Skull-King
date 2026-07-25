@@ -6,7 +6,9 @@ function lobbyWithHost(): RoomState {
   return {
     roomCode: "ABCD",
     status: "Lobby",
-    players: [{ name: "Alice", isHost: true, connected: true, hand: [], bid: null }],
+    players: [
+      { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
+    ],
     scoringMode: null,
     currentRound: null,
     currentTrick: null,
@@ -16,62 +18,104 @@ function lobbyWithHost(): RoomState {
 
 describe("joinRoom", () => {
   it("adds the joining player to the roster as a non-host, connected Player", () => {
-    const result = joinRoom(lobbyWithHost(), { type: "JoinRoom", roomCode: "ABCD", displayName: "Bob" });
+    const result = joinRoom(lobbyWithHost(), {
+      type: "JoinRoom",
+      roomCode: "ABCD",
+      displayName: "Bob",
+    });
 
     expect(result.state?.players).toEqual([
       { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
       { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
     ]);
-    expect(result.events).toEqual([{ type: "PlayerJoined", roomCode: "ABCD", playerName: "Bob" }]);
+    expect(result.events).toEqual([
+      { type: "PlayerJoined", roomCode: "ABCD", playerName: "Bob" },
+    ]);
   });
 
   it("trims whitespace from the display name", () => {
-    const result = joinRoom(lobbyWithHost(), { type: "JoinRoom", roomCode: "ABCD", displayName: "  Bob  " });
+    const result = joinRoom(lobbyWithHost(), {
+      type: "JoinRoom",
+      roomCode: "ABCD",
+      displayName: "  Bob  ",
+    });
 
     expect(result.state?.players[1]?.name).toBe("Bob");
   });
 
   it("rejects joining a Room Code with no matching Room", () => {
-    const result = joinRoom(null, { type: "JoinRoom", roomCode: "ZZZZ", displayName: "Bob" });
+    const result = joinRoom(null, {
+      type: "JoinRoom",
+      roomCode: "ZZZZ",
+      displayName: "Bob",
+    });
 
     expect(result.state).toBeNull();
-    expect(result.events).toEqual([{ type: "JoinRejected", roomCode: "ZZZZ", reason: "RoomNotFound" }]);
+    expect(result.events).toEqual([
+      { type: "JoinRejected", roomCode: "ZZZZ", reason: "RoomNotFound" },
+    ]);
   });
 
   it("rejects a blank display name, leaving the Room state unchanged", () => {
     const room = lobbyWithHost();
-    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "   " });
+    const result = joinRoom(room, {
+      type: "JoinRoom",
+      roomCode: "ABCD",
+      displayName: "   ",
+    });
 
     expect(result.state).toEqual(room);
-    expect(result.events).toEqual([{ type: "JoinRejected", roomCode: "ABCD", reason: "InvalidName" }]);
+    expect(result.events).toEqual([
+      { type: "JoinRejected", roomCode: "ABCD", reason: "InvalidName" },
+    ]);
   });
 
   it("rejects a display name already taken in the Room, case-insensitively", () => {
     const room = lobbyWithHost();
-    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "alice" });
+    const result = joinRoom(room, {
+      type: "JoinRoom",
+      roomCode: "ABCD",
+      displayName: "alice",
+    });
 
     expect(result.state).toEqual(room);
-    expect(result.events).toEqual([{ type: "JoinRejected", roomCode: "ABCD", reason: "NameTaken" }]);
+    expect(result.events).toEqual([
+      { type: "JoinRejected", roomCode: "ABCD", reason: "NameTaken" },
+    ]);
   });
 
   it("rejects a brand-new Player joining a Room that is no longer in Lobby status", () => {
     const room: RoomState = { ...lobbyWithHost(), status: "Active" };
-    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "Bob" });
+    const result = joinRoom(room, {
+      type: "JoinRoom",
+      roomCode: "ABCD",
+      displayName: "Bob",
+    });
 
     expect(result.state).toEqual(room);
-    expect(result.events).toEqual([{ type: "JoinRejected", roomCode: "ABCD", reason: "RoomNotInLobby" }]);
+    expect(result.events).toEqual([
+      { type: "JoinRejected", roomCode: "ABCD", reason: "RoomNotInLobby" },
+    ]);
   });
 
   it("rejects joining a Completed Room even if the name matches a disconnected Player", () => {
     const room: RoomState = {
       ...lobbyWithHost(),
       status: "Completed",
-      players: [{ name: "Alice", isHost: true, connected: false, hand: [], bid: null }],
+      players: [
+        { name: "Alice", isHost: true, connected: false, hand: [], bid: null },
+      ],
     };
-    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "Alice" });
+    const result = joinRoom(room, {
+      type: "JoinRoom",
+      roomCode: "ABCD",
+      displayName: "Alice",
+    });
 
     expect(result.state).toEqual(room);
-    expect(result.events).toEqual([{ type: "JoinRejected", roomCode: "ABCD", reason: "RoomNotInLobby" }]);
+    expect(result.events).toEqual([
+      { type: "JoinRejected", roomCode: "ABCD", reason: "RoomNotInLobby" },
+    ]);
   });
 
   it("resumes a disconnected Player's seat in an Active Room, leaving hand and bid untouched", () => {
@@ -80,7 +124,13 @@ describe("joinRoom", () => {
       status: "Active",
       players: [
         { name: "Alice", isHost: true, connected: true, hand: [], bid: 1 },
-        { name: "Bob", isHost: false, connected: false, hand: [{ kind: "Suited", suit: "Parrot", rank: 5 }], bid: null },
+        {
+          name: "Bob",
+          isHost: false,
+          connected: false,
+          hand: [{ kind: "Suited", suit: "Parrot", rank: 5 }],
+          bid: null,
+        },
       ],
       scoringMode: "Traditional",
       currentRound: 2,
@@ -88,13 +138,23 @@ describe("joinRoom", () => {
       trickLeader: "Alice",
     };
 
-    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "bob" });
+    const result = joinRoom(room, {
+      type: "JoinRoom",
+      roomCode: "ABCD",
+      displayName: "bob",
+    });
 
     expect(result.state).toEqual({
       ...room,
       players: [
         room.players[0],
-        { name: "Bob", isHost: false, connected: true, hand: [{ kind: "Suited", suit: "Parrot", rank: 5 }], bid: null },
+        {
+          name: "Bob",
+          isHost: false,
+          connected: true,
+          hand: [{ kind: "Suited", suit: "Parrot", rank: 5 }],
+          bid: null,
+        },
       ],
     });
     expect(result.events).toEqual([
@@ -116,7 +176,11 @@ describe("joinRoom", () => {
       trickLeader: "Alice",
     };
 
-    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "Bob" });
+    const result = joinRoom(room, {
+      type: "JoinRoom",
+      roomCode: "ABCD",
+      displayName: "Bob",
+    });
 
     expect(result.state?.status).toBe("Active");
     expect(result.events).toEqual([
@@ -139,33 +203,53 @@ describe("joinRoom", () => {
       trickLeader: "Alice",
     };
 
-    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "Bob" });
+    const result = joinRoom(room, {
+      type: "JoinRoom",
+      roomCode: "ABCD",
+      displayName: "Bob",
+    });
 
     expect(result.state?.status).toBe("Paused");
-    expect(result.events).toEqual([{ type: "PlayerReconnected", roomCode: "ABCD", playerName: "Bob" }]);
+    expect(result.events).toEqual([
+      { type: "PlayerReconnected", roomCode: "ABCD", playerName: "Bob" },
+    ]);
   });
 
   it("rejects a reconnect attempt for a Player who is already connected", () => {
     const room: RoomState = { ...lobbyWithHost(), status: "Active" };
-    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "Alice" });
+    const result = joinRoom(room, {
+      type: "JoinRoom",
+      roomCode: "ABCD",
+      displayName: "Alice",
+    });
 
     expect(result.state).toEqual(room);
-    expect(result.events).toEqual([{ type: "JoinRejected", roomCode: "ABCD", reason: "AlreadyConnected" }]);
+    expect(result.events).toEqual([
+      { type: "JoinRejected", roomCode: "ABCD", reason: "AlreadyConnected" },
+    ]);
   });
 
   it("rejects a brand-new name joining a Room that is no longer in Lobby status, even while Paused", () => {
     const room: RoomState = {
       roomCode: "ABCD",
       status: "Paused",
-      players: [{ name: "Alice", isHost: true, connected: false, hand: [], bid: null }],
+      players: [
+        { name: "Alice", isHost: true, connected: false, hand: [], bid: null },
+      ],
       scoringMode: "Traditional",
       currentRound: 1,
       currentTrick: [],
       trickLeader: "Alice",
     };
-    const result = joinRoom(room, { type: "JoinRoom", roomCode: "ABCD", displayName: "Carol" });
+    const result = joinRoom(room, {
+      type: "JoinRoom",
+      roomCode: "ABCD",
+      displayName: "Carol",
+    });
 
     expect(result.state).toEqual(room);
-    expect(result.events).toEqual([{ type: "JoinRejected", roomCode: "ABCD", reason: "RoomNotInLobby" }]);
+    expect(result.events).toEqual([
+      { type: "JoinRejected", roomCode: "ABCD", reason: "RoomNotInLobby" },
+    ]);
   });
 });

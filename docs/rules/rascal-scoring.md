@@ -15,21 +15,21 @@ whether a player bid 0, 1, 3, or 5.
 
 How much of that potential a player actually earns depends on how close their bid was to the tricks they took, expressed as one of three **Outcomes**:
 
-| Outcome | Condition | Share of potential round points earned |
-|---|---|---|
-| **Direct Hit** | Took exactly the number of tricks bid | All (100%) |
-| **Glancing Blow** | Off by 1 | Half (50%) |
-| **Complete Miss** | Off by 2 or more | None (0%) |
+| Outcome           | Condition                             | Share of potential round points earned |
+| ----------------- | ------------------------------------- | -------------------------------------- |
+| **Direct Hit**    | Took exactly the number of tricks bid | All (100%)                             |
+| **Glancing Blow** | Off by 1                              | Half (50%)                             |
+| **Complete Miss** | Off by 2 or more                      | None (0%)                              |
 
 ## Bonus Points
 
 Bonus points (see `rulebook.md`'s Bonus Points section for what earns a bonus) follow the **same Outcome-based split** as round points:
 
-| Outcome | Share of potential bonus points earned |
-|---|---|
-| Direct Hit | All |
-| Glancing Blow | Half |
-| Complete Miss | None |
+| Outcome       | Share of potential bonus points earned |
+| ------------- | -------------------------------------- |
+| Direct Hit    | All                                    |
+| Glancing Blow | Half                                   |
+| Complete Miss | None                                   |
 
 ## Worked Examples
 

@@ -8,7 +8,7 @@ An online, live-multiplayer implementation of the Skull King trick-taking card g
 
 **Room**:
 A live session identified by a shareable Room Code, joined by Players entering the code and a display name. No account is required; a Room is the unit of reconnection — leaving and rejoining with the same code and name resumes the same seat.
-_Avoid_: Lobby (a Room *has* a Lobby status; it isn't one), Session, Game (see below).
+_Avoid_: Lobby (a Room _has_ a Lobby status; it isn't one), Session, Game (see below).
 
 **Room Status**:
 The Room's current phase: `Lobby` (waiting for the Host to start), `Active` (a Round is in progress), `Paused` (a Player has disconnected and the Room is waiting for them to reconnect), or `Completed` (all 10 Rounds finished).

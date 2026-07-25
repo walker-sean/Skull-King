@@ -21,7 +21,10 @@ export function App({ socketClient }: AppProps) {
     setError(null);
     const response = await socketClient.createRoom(hostName);
     if (response.ok) {
-      setLocalPlayerName(response.state.players.find((player) => player.isHost)?.name ?? hostName);
+      setLocalPlayerName(
+        response.state.players.find((player) => player.isHost)?.name ??
+          hostName,
+      );
       setRoomState(response.state);
     } else {
       setError(REJECTION_MESSAGES[response.event.reason]);
@@ -42,7 +45,10 @@ export function App({ socketClient }: AppProps) {
   async function handleStartGame(scoringMode: ScoringMode) {
     if (!roomState) return;
     setError(null);
-    const response = await socketClient.startGame(roomState.roomCode, scoringMode);
+    const response = await socketClient.startGame(
+      roomState.roomCode,
+      scoringMode,
+    );
     if (response.ok) {
       setRoomState(response.state);
     } else {
@@ -60,5 +66,11 @@ export function App({ socketClient }: AppProps) {
     );
   }
 
-  return <HomeScreen error={error} onCreateRoom={handleCreateRoom} onJoinRoom={handleJoinRoom} />;
+  return (
+    <HomeScreen
+      error={error}
+      onCreateRoom={handleCreateRoom}
+      onJoinRoom={handleJoinRoom}
+    />
+  );
 }

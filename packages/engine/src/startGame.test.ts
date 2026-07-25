@@ -100,7 +100,11 @@ describe("startGame", () => {
   });
 
   it("rejects starting a Room that has already started, leaving the Room state unchanged", () => {
-    const room: RoomState = { ...lobbyWith(3), status: "Active", scoringMode: "Traditional" };
+    const room: RoomState = {
+      ...lobbyWith(3),
+      status: "Active",
+      scoringMode: "Traditional",
+    };
     const result = startGame(room, {
       type: "StartGame",
       roomCode: "ABCD",

@@ -6,7 +6,11 @@ export interface HomeScreenProps {
   onJoinRoom: (roomCode: string, displayName: string) => void;
 }
 
-export function HomeScreen({ error, onCreateRoom, onJoinRoom }: HomeScreenProps) {
+export function HomeScreen({
+  error,
+  onCreateRoom,
+  onJoinRoom,
+}: HomeScreenProps) {
   const [hostName, setHostName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [displayName, setDisplayName] = useState("");

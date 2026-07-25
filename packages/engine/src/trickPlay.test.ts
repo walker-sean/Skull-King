@@ -10,7 +10,10 @@ function playerWith(name: string, hand: Card[], isHost = false): Player {
   return { name, isHost, connected: true, hand, bid: 0 };
 }
 
-function activeRoom(players: Player[], leaderName = players[0]?.name ?? null): RoomState {
+function activeRoom(
+  players: Player[],
+  leaderName = players[0]?.name ?? null,
+): RoomState {
   return {
     roomCode: "ABCD",
     status: "Active",
@@ -53,7 +56,11 @@ describe("currentTurnPlayerName", () => {
 describe("playCard", () => {
   it("records the play, removes the card from the Player's hand, and confirms it with a CardPlayed event", () => {
     const players = [
-      playerWith("Alice", [suited("Parrot", 5), suited("TreasureChest", 1)], true),
+      playerWith(
+        "Alice",
+        [suited("Parrot", 5), suited("TreasureChest", 1)],
+        true,
+      ),
       playerWith("Bob", [suited("Parrot", 3)]),
     ];
     const room = activeRoom(players);
@@ -68,11 +75,16 @@ describe("playCard", () => {
     expect(result.state?.currentTrick).toEqual([
       { playerName: "Alice", card: suited("Parrot", 5) },
     ]);
-    expect(result.state?.players.find((p) => p.name === "Alice")?.hand).toEqual([
-      suited("TreasureChest", 1),
-    ]);
+    expect(result.state?.players.find((p) => p.name === "Alice")?.hand).toEqual(
+      [suited("TreasureChest", 1)],
+    );
     expect(result.events).toEqual([
-      { type: "CardPlayed", roomCode: "ABCD", playerName: "Alice", card: suited("Parrot", 5) },
+      {
+        type: "CardPlayed",
+        roomCode: "ABCD",
+        playerName: "Alice",
+        card: suited("Parrot", 5),
+      },
     ]);
   });
 
@@ -97,7 +109,10 @@ describe("playCard", () => {
   });
 
   it("rejects playing a card the Player doesn't hold", () => {
-    const players = [playerWith("Alice", [suited("Parrot", 5)], true), playerWith("Bob", [])];
+    const players = [
+      playerWith("Alice", [suited("Parrot", 5)], true),
+      playerWith("Bob", []),
+    ];
     const room = activeRoom(players);
 
     const result = playCard(room, {
@@ -202,7 +217,11 @@ describe("playCard", () => {
 
     expect(result.state).toEqual(room);
     expect(result.events).toEqual([
-      { type: "PlayCardRejected", roomCode: "ABCD", reason: "BiddingIncomplete" },
+      {
+        type: "PlayCardRejected",
+        roomCode: "ABCD",
+        reason: "BiddingIncomplete",
+      },
     ]);
   });
 
@@ -662,7 +681,11 @@ describe("playCard", () => {
 
       expect(result.state).toEqual(room);
       expect(result.events).toEqual([
-        { type: "PlayCardRejected", roomCode: "ABCD", reason: "InvalidTigressDeclaration" },
+        {
+          type: "PlayCardRejected",
+          roomCode: "ABCD",
+          reason: "InvalidTigressDeclaration",
+        },
       ]);
     });
   });

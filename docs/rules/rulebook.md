@@ -8,20 +8,20 @@ Skull King is a trick-taking game played over **ten rounds**. In each round, pla
 
 ## Deck Contents
 
-| Group | Cards |
-|---|---|
-| Suited: Parrot (green) | 1–14 |
-| Suited: Treasure Chest (yellow) | 1–14 |
-| Suited: Pirate Map (purple) | 1–14 |
-| Suited: Jolly Roger (black, trump) | 1–14 |
-| Pirate | 5 |
-| Tigress | 1 |
-| Skull King | 1 |
-| Mermaid | 2 |
-| Escape | 5 |
-| **Advanced:** Loot | 2 |
-| **Advanced:** Kraken | 1 |
-| **Advanced:** White Whale | 1 |
+| Group                              | Cards |
+| ---------------------------------- | ----- |
+| Suited: Parrot (green)             | 1–14  |
+| Suited: Treasure Chest (yellow)    | 1–14  |
+| Suited: Pirate Map (purple)        | 1–14  |
+| Suited: Jolly Roger (black, trump) | 1–14  |
+| Pirate                             | 5     |
+| Tigress                            | 1     |
+| Skull King                         | 1     |
+| Mermaid                            | 2     |
+| Escape                             | 5     |
+| **Advanced:** Loot                 | 2     |
+| **Advanced:** Kraken               | 1     |
+| **Advanced:** White Whale          | 1     |
 
 56 suited + 18 special (base) + 4 advanced = **74 cards total**.
 
@@ -79,13 +79,13 @@ Three standard suits — Parrot (green), Treasure Chest (yellow), Pirate Map (pu
 
 Special cards don't belong to a suit and can be played regardless of the led suit.
 
-| Card | Count | Rank / behavior |
-|---|---|---|
-| **Pirate** | 5 | Outranks all suited cards, including trump. If multiple Pirates are played in a trick, the first one played outranks the others. |
-| **Tigress** | 1 | Declares itself as either a Pirate or an Escape at the moment it's played. |
-| **Skull King** | 1 | Beats all suited cards and Pirates (including a Tigress played as a Pirate). Only Mermaids outrank it. |
-| **Mermaid** | 2 | Outranks the Skull King and all suited cards; loses to Pirates. If both Mermaids land in the same trick, the first played outranks the second. |
-| **Escape** | 5 | Always loses to every other card. If all played cards in a trick are Escapes (or cards acting as one), the first Escape played wins. |
+| Card           | Count | Rank / behavior                                                                                                                                |
+| -------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Pirate**     | 5     | Outranks all suited cards, including trump. If multiple Pirates are played in a trick, the first one played outranks the others.               |
+| **Tigress**    | 1     | Declares itself as either a Pirate or an Escape at the moment it's played.                                                                     |
+| **Skull King** | 1     | Beats all suited cards and Pirates (including a Tigress played as a Pirate). Only Mermaids outrank it.                                         |
+| **Mermaid**    | 2     | Outranks the Skull King and all suited cards; loses to Pirates. If both Mermaids land in the same trick, the first played outranks the second. |
+| **Escape**     | 5     | Always loses to every other card. If all played cards in a trick are Escapes (or cards acting as one), the first Escape played wins.           |
 
 **Capture hierarchy**: Escape < Suited (trump beats other suits) < Pirate < Skull King < Mermaid.
 
@@ -132,13 +132,13 @@ Johnny bids 0 on round 9 (9 cards dealt), takes 2 tricks → −90 (−10 × 9).
 
 Bonus points are earned **only if the player also hits their bid that round**. Order of play within the trick doesn't matter — only who ends up capturing the card.
 
-| Bonus | Points |
-|---|---|
+| Bonus                                                            | Points   |
+| ---------------------------------------------------------------- | -------- |
 | Capturing a standard-suit (green/purple/yellow) numbered-14 card | +10 each |
-| Capturing the trump-suit (black) numbered-14 card | +20 |
-| Capturing a Mermaid with a Pirate | +20 each |
-| Capturing a Pirate with the Skull King | +30 each |
-| Capturing the Skull King with a Mermaid | +40 |
+| Capturing the trump-suit (black) numbered-14 card                | +20      |
+| Capturing a Mermaid with a Pirate                                | +20 each |
+| Capturing a Pirate with the Skull King                           | +30 each |
+| Capturing the Skull King with a Mermaid                          | +40      |
 
 ```
 Example: Lawrence leads a yellow 14; Charlotte plays a Pirate (hoping for the
@@ -161,14 +161,14 @@ On Graybeard's turn, flip the top card of his hand and add it to the trick — h
 
 Optional shorter/alternate game lengths:
 
-| Name | Cards per hand, per round |
-|---|---|
-| Even Keeled | 2, 4, 6, 8, 10 |
-| Skip to the Brawl | 6, 7, 8, 9, 10 |
-| Swift-n-Salty Skirmish | 5 rounds of 5 |
-| Broadside Barrage | 10 rounds of 10 |
-| Whirlpool | 9, 7, 5, 3, 1 |
-| Past Your Bedtime | 1 round of 1 (plus a goodnight hug) |
+| Name                   | Cards per hand, per round           |
+| ---------------------- | ----------------------------------- |
+| Even Keeled            | 2, 4, 6, 8, 10                      |
+| Skip to the Brawl      | 6, 7, 8, 9, 10                      |
+| Swift-n-Salty Skirmish | 5 rounds of 5                       |
+| Broadside Barrage      | 10 rounds of 10                     |
+| Whirlpool              | 9, 7, 5, 3, 1                       |
+| Past Your Bedtime      | 1 round of 1 (plus a goodnight hug) |
 
 ## Advanced Play Options
 
@@ -176,7 +176,7 @@ Advanced cards are a menu — include as many or as few as wanted.
 
 ### Kraken
 
-When played, the trick is destroyed: no one wins it, and the played cards are set aside. The next trick is led by the player who *would have* won the destroyed trick.
+When played, the trick is destroyed: no one wins it, and the played cards are set aside. The next trick is led by the player who _would have_ won the destroyed trick.
 
 ### White Whale
 
@@ -194,19 +194,19 @@ and suits are stripped; Susan's 14 (highest number) wins the trick.
 
 Played as an Escape. Forms an **Alliance** between whoever played it and whoever wins that trick. If both players hit their bid that round, each is awarded **+20 bonus points**.
 
-If a Loot card leads the trick, the next *suited* card played sets the lead suit. If every other card played is an Escape (or the Tigress-as-Escape), the Loot player wins the trick — but no Alliance forms and no bonus is awarded (since the Loot player won their own trick).
+If a Loot card leads the trick, the next _suited_ card played sets the lead suit. If every other card played is an Escape (or the Tigress-as-Escape), the Loot player wins the trick — but no Alliance forms and no bonus is awarded (since the Loot player won their own trick).
 
 ### Advanced Pirate Abilities
 
 Unlocked by **winning a trick by playing that specific named Pirate** (not merely by capturing a generic Pirate). The ability must be used immediately after the trick is won. Harry the Giant's ability is the only one usable after a round's final trick.
 
-| Pirate | Ability |
-|---|---|
-| Rosie D'Laney | Choose any player, including yourself, to lead the next trick. |
-| Bendt the Bandit | Draw 2 cards from the deck into your hand, then discard 2. |
+| Pirate           | Ability                                                                                                                                                               |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rosie D'Laney    | Choose any player, including yourself, to lead the next trick.                                                                                                        |
+| Bendt the Bandit | Draw 2 cards from the deck into your hand, then discard 2.                                                                                                            |
 | Rascal of Roatan | Optionally bet 10 or 20 points on getting your bid that round. Win the bet if you hit your bid, lose it if you don't. Declining the bet leaves your score unaffected. |
-| Juanita Jade | Privately look through the cards not dealt that round. |
-| Harry the Giant | Change your own bid by plus or minus one, or leave it unchanged. |
+| Juanita Jade     | Privately look through the cards not dealt that round.                                                                                                                |
+| Harry the Giant  | Change your own bid by plus or minus one, or leave it unchanged.                                                                                                      |
 
 ### Leading with Advanced Cards
 

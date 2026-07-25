@@ -31,7 +31,10 @@ function startGameBlockedReason(playerCount: number): StartGameBlockedReason {
 }
 
 /** Derives what the Lobby screen renders from synced Room state plus the local Player's identity. */
-export function selectLobbyView(state: RoomState, localPlayerName: string): LobbyViewModel {
+export function selectLobbyView(
+  state: RoomState,
+  localPlayerName: string,
+): LobbyViewModel {
   const players = state.players.map((player) => ({
     ...player,
     isSelf: player.name === localPlayerName,

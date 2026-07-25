@@ -11,14 +11,24 @@ describe("buildDeck", () => {
     const deck = buildDeck();
     const suited = deck.filter((card) => card.kind === "Suited");
     expect(suited).toHaveLength(56);
-    for (const suit of ["Parrot", "TreasureChest", "PirateMap", "JollyRoger"] as const) {
-      const suitCards = suited.filter((card) => card.kind === "Suited" && card.suit === suit);
-      expect(suitCards.map((card) => (card.kind === "Suited" ? card.rank : null)).sort(
-        (a, b) => (a ?? 0) - (b ?? 0),
-      )).toEqual(Array.from({ length: 14 }, (_, i) => i + 1));
+    for (const suit of [
+      "Parrot",
+      "TreasureChest",
+      "PirateMap",
+      "JollyRoger",
+    ] as const) {
+      const suitCards = suited.filter(
+        (card) => card.kind === "Suited" && card.suit === suit,
+      );
+      expect(
+        suitCards
+          .map((card) => (card.kind === "Suited" ? card.rank : null))
+          .sort((a, b) => (a ?? 0) - (b ?? 0)),
+      ).toEqual(Array.from({ length: 14 }, (_, i) => i + 1));
     }
 
-    const countOf = (kind: string) => deck.filter((card) => card.kind === kind).length;
+    const countOf = (kind: string) =>
+      deck.filter((card) => card.kind === kind).length;
     expect(countOf("Pirate")).toBe(5);
     expect(countOf("Tigress")).toBe(1);
     expect(countOf("SkullKing")).toBe(1);

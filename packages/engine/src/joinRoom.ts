@@ -1,7 +1,16 @@
-import type { EngineResult, JoinRoomCommand, JoinRejectedReason, RoomState } from "@skull-king/shared";
+import type {
+  EngineResult,
+  JoinRoomCommand,
+  JoinRejectedReason,
+  RoomState,
+} from "@skull-king/shared";
 import { normalizeName } from "./normalizeName.js";
 
-function rejected(state: RoomState, roomCode: string, reason: JoinRejectedReason): EngineResult {
+function rejected(
+  state: RoomState,
+  roomCode: string,
+  reason: JoinRejectedReason,
+): EngineResult {
   return {
     state,
     events: [{ type: "JoinRejected", roomCode, reason }],
@@ -15,11 +24,20 @@ function rejected(state: RoomState, roomCode: string, reason: JoinRejectedReason
  * separate "Reconnect" command; the Room glossary treats joining and rejoining as the
  * same action.
  */
-export function joinRoom(state: RoomState | null, command: JoinRoomCommand): EngineResult {
+export function joinRoom(
+  state: RoomState | null,
+  command: JoinRoomCommand,
+): EngineResult {
   if (state === null) {
     return {
       state: null,
-      events: [{ type: "JoinRejected", roomCode: command.roomCode, reason: "RoomNotFound" }],
+      events: [
+        {
+          type: "JoinRejected",
+          roomCode: command.roomCode,
+          reason: "RoomNotFound",
+        },
+      ],
     };
   }
 
@@ -43,10 +61,22 @@ export function joinRoom(state: RoomState | null, command: JoinRoomCommand): Eng
         ...state,
         players: [
           ...state.players,
-          { name: displayName, isHost: false, connected: true, hand: [], bid: null },
+          {
+            name: displayName,
+            isHost: false,
+            connected: true,
+            hand: [],
+            bid: null,
+          },
         ],
       },
-      events: [{ type: "PlayerJoined", roomCode: command.roomCode, playerName: displayName }],
+      events: [
+        {
+          type: "PlayerJoined",
+          roomCode: command.roomCode,
+          playerName: displayName,
+        },
+      ],
     };
   }
 
@@ -59,15 +89,24 @@ export function joinRoom(state: RoomState | null, command: JoinRoomCommand): Eng
   }
 
   const players = state.players.map((player) =>
-    player.name === existingPlayer.name ? { ...player, connected: true } : player,
+    player.name === existingPlayer.name
+      ? { ...player, connected: true }
+      : player,
   );
-  const roomResumes = state.status === "Paused" && players.every((player) => player.connected);
+  const roomResumes =
+    state.status === "Paused" && players.every((player) => player.connected);
 
   return {
     state: { ...state, players, status: roomResumes ? "Active" : state.status },
     events: [
-      { type: "PlayerReconnected", roomCode: command.roomCode, playerName: existingPlayer.name },
-      ...(roomResumes ? [{ type: "RoomResumed", roomCode: command.roomCode } as const] : []),
+      {
+        type: "PlayerReconnected",
+        roomCode: command.roomCode,
+        playerName: existingPlayer.name,
+      },
+      ...(roomResumes
+        ? [{ type: "RoomResumed", roomCode: command.roomCode } as const]
+        : []),
     ],
   };
 }

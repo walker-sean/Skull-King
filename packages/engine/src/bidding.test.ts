@@ -43,7 +43,9 @@ describe("submitBid", () => {
       actorName: "Player1",
     });
 
-    expect(result.state?.players.find((p) => p.name === "Player1")?.bid).toBe(2);
+    expect(result.state?.players.find((p) => p.name === "Player1")?.bid).toBe(
+      2,
+    );
     expect(result.events).toEqual([
       { type: "BidSubmitted", roomCode: "ABCD", playerName: "Player1" },
     ]);
@@ -58,20 +60,32 @@ describe("submitBid", () => {
       actorName: "Player1",
     });
 
-    expect(result.state?.players.find((p) => p.name === "Player2")?.bid).toBeNull();
-    expect(result.state?.players.find((p) => p.name === "Player3")?.bid).toBeNull();
+    expect(
+      result.state?.players.find((p) => p.name === "Player2")?.bid,
+    ).toBeNull();
+    expect(
+      result.state?.players.find((p) => p.name === "Player3")?.bid,
+    ).toBeNull();
   });
 
   it("accepts a Bid of 0 and a Bid equal to the full hand size", () => {
     const room = activeRoomWith(3, 3);
 
     expect(
-      submitBid(room, { type: "SubmitBid", roomCode: "ABCD", bid: 0, actorName: "Player1" }).state
-        ?.players[0]?.bid,
+      submitBid(room, {
+        type: "SubmitBid",
+        roomCode: "ABCD",
+        bid: 0,
+        actorName: "Player1",
+      }).state?.players[0]?.bid,
     ).toBe(0);
     expect(
-      submitBid(room, { type: "SubmitBid", roomCode: "ABCD", bid: 3, actorName: "Player1" }).state
-        ?.players[0]?.bid,
+      submitBid(room, {
+        type: "SubmitBid",
+        roomCode: "ABCD",
+        bid: 3,
+        actorName: "Player1",
+      }).state?.players[0]?.bid,
     ).toBe(3);
   });
 

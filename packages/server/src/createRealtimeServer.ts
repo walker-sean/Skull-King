@@ -55,20 +55,27 @@ function firstRejection(events: DomainEvent[]): RejectionEvent {
 
 export function createRealtimeServer(store: RoomStore): RealtimeServer {
   const httpServer = createServer();
-  const io = new SocketIoServer<ClientToServerEvents, ServerToClientEvents>(httpServer, {
-    cors: { origin: "*" },
-  });
+  const io = new SocketIoServer<ClientToServerEvents, ServerToClientEvents>(
+    httpServer,
+    {
+      cors: { origin: "*" },
+    },
+  );
 
   // Keyed by socket id so a broadcast to a whole Room can look up which Player
   // each destination socket is bound to and redact that viewer's Room state.
   const sessionsBySocketId = new Map<string, SocketSession>();
 
-  async function broadcastRoomState(roomCode: string, state: RoomState): Promise<void> {
+  async function broadcastRoomState(
+    roomCode: string,
+    state: RoomState,
+  ): Promise<void> {
     const sockets = await io.in(roomCode).fetchSockets();
     for (const destination of sockets) {
       const destinationSession = sessionsBySocketId.get(destination.id);
       const viewerName =
-        destinationSession !== undefined && destinationSession.roomCode === roomCode
+        destinationSession !== undefined &&
+        destinationSession.roomCode === roomCode
           ? destinationSession.playerName
           : null;
       destination.emit("roomState", redactRoomStateFor(state, viewerName));
@@ -88,21 +95,30 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
 
       store.saveRoom(result.state);
       void socket.join(result.state.roomCode);
-      const roomCreated = result.events.find((event) => event.type === "RoomCreated");
+      const roomCreated = result.events.find(
+        (event) => event.type === "RoomCreated",
+      );
       if (roomCreated !== undefined) {
         sessionsBySocketId.set(socket.id, {
           roomCode: result.state.roomCode,
           playerName: roomCreated.hostName,
         });
       }
-      callback({ ok: true, state: redactRoomStateFor(result.state, roomCreated?.hostName ?? null) });
+      callback({
+        ok: true,
+        state: redactRoomStateFor(result.state, roomCreated?.hostName ?? null),
+      });
       void broadcastRoomState(result.state.roomCode, result.state);
     });
 
     socket.on("joinRoom", ({ roomCode, displayName }, callback) => {
       const normalizedCode = roomCode.trim().toUpperCase();
       const state = store.loadRoom(normalizedCode);
-      const result = joinRoom(state, { type: "JoinRoom", roomCode: normalizedCode, displayName });
+      const result = joinRoom(state, {
+        type: "JoinRoom",
+        roomCode: normalizedCode,
+        displayName,
+      });
 
       if (result.state === null || result.events.some(isRejectionEvent)) {
         callback({ ok: false, event: firstRejection(result.events) });
@@ -119,9 +135,15 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
       );
       const playerName = identityEvent?.playerName ?? null;
       if (playerName !== null) {
-        sessionsBySocketId.set(socket.id, { roomCode: normalizedCode, playerName });
+        sessionsBySocketId.set(socket.id, {
+          roomCode: normalizedCode,
+          playerName,
+        });
       }
-      callback({ ok: true, state: redactRoomStateFor(result.state, playerName) });
+      callback({
+        ok: true,
+        state: redactRoomStateFor(result.state, playerName),
+      });
       void broadcastRoomState(normalizedCode, result.state);
     });
 
@@ -129,7 +151,10 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
       const normalizedCode = roomCode.trim().toUpperCase();
       const state = store.loadRoom(normalizedCode);
       const session = sessionsBySocketId.get(socket.id);
-      const actorName = session !== undefined && session.roomCode === normalizedCode ? session.playerName : null;
+      const actorName =
+        session !== undefined && session.roomCode === normalizedCode
+          ? session.playerName
+          : null;
       const result = startGame(state, {
         type: "StartGame",
         roomCode: normalizedCode,
@@ -143,7 +168,10 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
       }
 
       store.saveRoom(result.state);
-      callback({ ok: true, state: redactRoomStateFor(result.state, actorName) });
+      callback({
+        ok: true,
+        state: redactRoomStateFor(result.state, actorName),
+      });
       void broadcastRoomState(normalizedCode, result.state);
     });
 
@@ -151,7 +179,10 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
       const normalizedCode = roomCode.trim().toUpperCase();
       const state = store.loadRoom(normalizedCode);
       const session = sessionsBySocketId.get(socket.id);
-      const actorName = session !== undefined && session.roomCode === normalizedCode ? session.playerName : null;
+      const actorName =
+        session !== undefined && session.roomCode === normalizedCode
+          ? session.playerName
+          : null;
       const result = submitBid(state, {
         type: "SubmitBid",
         roomCode: normalizedCode,
@@ -165,7 +196,10 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
       }
 
       store.saveRoom(result.state);
-      callback({ ok: true, state: redactRoomStateFor(result.state, actorName) });
+      callback({
+        ok: true,
+        state: redactRoomStateFor(result.state, actorName),
+      });
       void broadcastRoomState(normalizedCode, result.state);
     });
 
@@ -173,7 +207,10 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
       const normalizedCode = roomCode.trim().toUpperCase();
       const state = store.loadRoom(normalizedCode);
       const session = sessionsBySocketId.get(socket.id);
-      const actorName = session !== undefined && session.roomCode === normalizedCode ? session.playerName : null;
+      const actorName =
+        session !== undefined && session.roomCode === normalizedCode
+          ? session.playerName
+          : null;
       const result = playCard(state, {
         type: "PlayCard",
         roomCode: normalizedCode,
@@ -187,7 +224,10 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
       }
 
       store.saveRoom(result.state);
-      callback({ ok: true, state: redactRoomStateFor(result.state, actorName) });
+      callback({
+        ok: true,
+        state: redactRoomStateFor(result.state, actorName),
+      });
       void broadcastRoomState(normalizedCode, result.state);
     });
 

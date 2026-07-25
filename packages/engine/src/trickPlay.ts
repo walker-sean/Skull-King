@@ -45,14 +45,21 @@ function ledSuit(trick: readonly TrickPlay[]): Suit | null {
  * however many cards have already been played this Trick (see CONTEXT.md's Trick entry).
  */
 export function currentTurnPlayerName(state: RoomState): string | null {
-  if (state.trickLeader === null || state.currentTrick === null || state.players.length === 0) {
+  if (
+    state.trickLeader === null ||
+    state.currentTrick === null ||
+    state.players.length === 0
+  ) {
     return null;
   }
-  const leaderIndex = state.players.findIndex((player) => player.name === state.trickLeader);
+  const leaderIndex = state.players.findIndex(
+    (player) => player.name === state.trickLeader,
+  );
   if (leaderIndex === -1) {
     return null;
   }
-  const turnIndex = (leaderIndex + state.currentTrick.length) % state.players.length;
+  const turnIndex =
+    (leaderIndex + state.currentTrick.length) % state.players.length;
   return state.players[turnIndex]?.name ?? null;
 }
 
@@ -134,7 +141,10 @@ function resolveTrickWinner(trick: readonly TrickPlay[]): string {
   ).playerName;
 }
 
-export function playCard(state: RoomState | null, command: PlayCardCommand): EngineResult {
+export function playCard(
+  state: RoomState | null,
+  command: PlayCardCommand,
+): EngineResult {
   if (state === null) {
     return rejected(null, command.roomCode, "RoomNotFound");
   }
@@ -151,7 +161,9 @@ export function playCard(state: RoomState | null, command: PlayCardCommand): Eng
     return rejected(state, command.roomCode, "BiddingIncomplete");
   }
 
-  const player = state.players.find((candidate) => candidate.name === command.actorName);
+  const player = state.players.find(
+    (candidate) => candidate.name === command.actorName,
+  );
   if (player === undefined) {
     return rejected(state, command.roomCode, "PlayerNotFound");
   }
@@ -160,7 +172,9 @@ export function playCard(state: RoomState | null, command: PlayCardCommand): Eng
     return rejected(state, command.roomCode, "NotYourTurn");
   }
 
-  const cardIndex = player.hand.findIndex((card) => cardsEqual(card, command.card));
+  const cardIndex = player.hand.findIndex((card) =>
+    cardsEqual(card, command.card),
+  );
   if (cardIndex === -1) {
     return rejected(state, command.roomCode, "CardNotInHand");
   }
@@ -191,7 +205,9 @@ export function playCard(state: RoomState | null, command: PlayCardCommand): Eng
     ...player.hand.slice(cardIndex + 1),
   ];
   const players = state.players.map((candidate) =>
-    candidate.name === player.name ? { ...candidate, hand: remainingHand } : candidate,
+    candidate.name === player.name
+      ? { ...candidate, hand: remainingHand }
+      : candidate,
   );
   const trick: TrickPlay[] = [
     ...state.currentTrick,
@@ -199,7 +215,12 @@ export function playCard(state: RoomState | null, command: PlayCardCommand): Eng
   ];
 
   const events: DomainEvent[] = [
-    { type: "CardPlayed", roomCode: command.roomCode, playerName: player.name, card: command.card },
+    {
+      type: "CardPlayed",
+      roomCode: command.roomCode,
+      playerName: player.name,
+      card: command.card,
+    },
   ];
 
   if (trick.length === state.players.length) {

@@ -19,7 +19,10 @@ export function handSizeForRound(round: number, playerCount: number): number {
  * Player a hand sized per `handSizeForRound`. Every Round reshuffles from scratch
  * rather than continuing a prior Round's deal.
  */
-export function dealRound(playerNames: readonly string[], round: number): Map<string, Card[]> {
+export function dealRound(
+  playerNames: readonly string[],
+  round: number,
+): Map<string, Card[]> {
   const handSize = handSizeForRound(round, playerNames.length);
   const deck = shuffle(buildDeck());
 

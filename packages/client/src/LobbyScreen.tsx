@@ -37,7 +37,9 @@ export function LobbyScreen({ view, error, onStartGame }: LobbyScreenProps) {
           <select
             id="scoring-mode"
             value={scoringMode}
-            onChange={(event) => setScoringMode(event.target.value as ScoringMode)}
+            onChange={(event) =>
+              setScoringMode(event.target.value as ScoringMode)
+            }
           >
             <option value="Traditional">Traditional</option>
             <option value="Rascal">Rascal</option>
@@ -50,7 +52,9 @@ export function LobbyScreen({ view, error, onStartGame }: LobbyScreenProps) {
             Start Game
           </button>
           {view.startGameBlockedReason && (
-            <p role="alert">{REJECTION_MESSAGES[view.startGameBlockedReason]}</p>
+            <p role="alert">
+              {REJECTION_MESSAGES[view.startGameBlockedReason]}
+            </p>
           )}
           {error && <p role="alert">{error}</p>}
         </section>

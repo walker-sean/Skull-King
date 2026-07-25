@@ -11,7 +11,10 @@ import type {
 export interface SocketClient {
   createRoom(hostName: string): Promise<CommandResponse>;
   joinRoom(roomCode: string, displayName: string): Promise<CommandResponse>;
-  startGame(roomCode: string, scoringMode: ScoringMode): Promise<CommandResponse>;
+  startGame(
+    roomCode: string,
+    scoringMode: ScoringMode,
+  ): Promise<CommandResponse>;
   submitBid(roomCode: string, bid: number): Promise<CommandResponse>;
   playCard(roomCode: string, card: Card): Promise<CommandResponse>;
   onRoomState(handler: (state: RoomState) => void): () => void;
@@ -34,7 +37,10 @@ export function createSocketClient(url: string): SocketClient {
       });
     },
 
-    startGame(roomCode: string, scoringMode: ScoringMode): Promise<CommandResponse> {
+    startGame(
+      roomCode: string,
+      scoringMode: ScoringMode,
+    ): Promise<CommandResponse> {
       return new Promise((resolve) => {
         socket.emit("startGame", { roomCode, scoringMode }, resolve);
       });

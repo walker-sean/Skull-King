@@ -27,17 +27,31 @@ export interface PlayCardRequest {
 }
 
 export type CommandResponse =
-  | { ok: true; state: RoomState }
-  | { ok: false; event: RejectionEvent };
+  { ok: true; state: RoomState } | { ok: false; event: RejectionEvent };
 
 export interface ServerToClientEvents {
   roomState: (state: RoomState) => void;
 }
 
 export interface ClientToServerEvents {
-  createRoom: (request: CreateRoomRequest, callback: (response: CommandResponse) => void) => void;
-  joinRoom: (request: JoinRoomRequest, callback: (response: CommandResponse) => void) => void;
-  startGame: (request: StartGameRequest, callback: (response: CommandResponse) => void) => void;
-  submitBid: (request: SubmitBidRequest, callback: (response: CommandResponse) => void) => void;
-  playCard: (request: PlayCardRequest, callback: (response: CommandResponse) => void) => void;
+  createRoom: (
+    request: CreateRoomRequest,
+    callback: (response: CommandResponse) => void,
+  ) => void;
+  joinRoom: (
+    request: JoinRoomRequest,
+    callback: (response: CommandResponse) => void,
+  ) => void;
+  startGame: (
+    request: StartGameRequest,
+    callback: (response: CommandResponse) => void,
+  ) => void;
+  submitBid: (
+    request: SubmitBidRequest,
+    callback: (response: CommandResponse) => void,
+  ) => void;
+  playCard: (
+    request: PlayCardRequest,
+    callback: (response: CommandResponse) => void,
+  ) => void;
 }

@@ -17,5 +17,6 @@ export const REJECTION_MESSAGES: Record<RejectionEvent["reason"], string> = {
   NotYourTurn: "It's not your turn to play a card.",
   CardNotInHand: "That card isn't in your hand.",
   MustFollowSuit: "You must follow the led Suit if you can.",
-  InvalidTigressDeclaration: "Declare the Tigress as a Pirate or an Escape before playing it.",
+  InvalidTigressDeclaration:
+    "Declare the Tigress as a Pirate or an Escape before playing it.",
 };

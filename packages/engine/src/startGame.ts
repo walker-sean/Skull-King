@@ -21,7 +21,10 @@ function rejected(
   };
 }
 
-export function startGame(state: RoomState | null, command: StartGameCommand): EngineResult {
+export function startGame(
+  state: RoomState | null,
+  command: StartGameCommand,
+): EngineResult {
   if (state === null) {
     return rejected(null, command.roomCode, "RoomNotFound");
   }
@@ -63,7 +66,11 @@ export function startGame(state: RoomState | null, command: StartGameCommand): E
       players,
     },
     events: [
-      { type: "GameStarted", roomCode: command.roomCode, scoringMode: command.scoringMode },
+      {
+        type: "GameStarted",
+        roomCode: command.roomCode,
+        scoringMode: command.scoringMode,
+      },
     ],
   };
 }

@@ -16,7 +16,10 @@ function rejected(
   };
 }
 
-export function submitBid(state: RoomState | null, command: SubmitBidCommand): EngineResult {
+export function submitBid(
+  state: RoomState | null,
+  command: SubmitBidCommand,
+): EngineResult {
   if (state === null) {
     return rejected(null, command.roomCode, "RoomNotFound");
   }
@@ -25,7 +28,9 @@ export function submitBid(state: RoomState | null, command: SubmitBidCommand): E
     return rejected(state, command.roomCode, "RoomNotActive");
   }
 
-  const player = state.players.find((candidate) => candidate.name === command.actorName);
+  const player = state.players.find(
+    (candidate) => candidate.name === command.actorName,
+  );
   if (player === undefined) {
     return rejected(state, command.roomCode, "PlayerNotFound");
   }
@@ -43,12 +48,20 @@ export function submitBid(state: RoomState | null, command: SubmitBidCommand): E
   }
 
   const players = state.players.map((candidate) =>
-    candidate.name === player.name ? { ...candidate, bid: command.bid } : candidate,
+    candidate.name === player.name
+      ? { ...candidate, bid: command.bid }
+      : candidate,
   );
 
   return {
     state: { ...state, players },
-    events: [{ type: "BidSubmitted", roomCode: command.roomCode, playerName: player.name }],
+    events: [
+      {
+        type: "BidSubmitted",
+        roomCode: command.roomCode,
+        playerName: player.name,
+      },
+    ],
   };
 }
 
@@ -59,5 +72,8 @@ export function submitBid(state: RoomState | null, command: SubmitBidCommand): E
  * Bids rather than trusting any UI-level timing.
  */
 export function areAllBidsSubmitted(state: RoomState): boolean {
-  return state.players.length > 0 && state.players.every((player) => player.bid !== null);
+  return (
+    state.players.length > 0 &&
+    state.players.every((player) => player.bid !== null)
+  );
 }

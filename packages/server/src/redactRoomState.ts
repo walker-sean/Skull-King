@@ -7,7 +7,10 @@ import { areAllBidsSubmitted } from "@skull-king/engine";
  * Player's Bid is hidden too until every Player has bid, at which point all Bids
  * reveal at once (see CONTEXT.md's Bid glossary entry and `areAllBidsSubmitted`).
  */
-export function redactRoomStateFor(state: RoomState, viewerName: string | null): RoomState {
+export function redactRoomStateFor(
+  state: RoomState,
+  viewerName: string | null,
+): RoomState {
   const bidsRevealed = areAllBidsSubmitted(state);
   return {
     ...state,

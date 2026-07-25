@@ -39,7 +39,9 @@ describe("dealRound", () => {
       for (const round of [1, 3, 7]) {
         const hands = dealRound(namesFor(playerCount), round);
         for (const name of namesFor(playerCount)) {
-          expect(hands.get(name)).toHaveLength(handSizeForRound(round, playerCount));
+          expect(hands.get(name)).toHaveLength(
+            handSizeForRound(round, playerCount),
+          );
         }
       }
     }
@@ -58,7 +60,8 @@ describe("dealRound", () => {
     const allCards = names.flatMap((name) => hands.get(name) ?? []);
     expect(allCards).toHaveLength(30);
 
-    const countOf = (kind: string) => allCards.filter((card) => card.kind === kind).length;
+    const countOf = (kind: string) =>
+      allCards.filter((card) => card.kind === kind).length;
     expect(countOf("Pirate")).toBeLessThanOrEqual(5);
     expect(countOf("Mermaid")).toBeLessThanOrEqual(2);
     expect(countOf("Escape")).toBeLessThanOrEqual(5);

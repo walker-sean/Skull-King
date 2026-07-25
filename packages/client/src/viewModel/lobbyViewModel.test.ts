@@ -27,8 +27,22 @@ describe("selectLobbyView", () => {
     const view = selectLobbyView(roomState, "Bob");
 
     expect(view.players).toEqual([
-      { name: "Alice", isHost: true, connected: true, hand: [], bid: null, isSelf: false },
-      { name: "Bob", isHost: false, connected: true, hand: [], bid: null, isSelf: true },
+      {
+        name: "Alice",
+        isHost: true,
+        connected: true,
+        hand: [],
+        bid: null,
+        isSelf: false,
+      },
+      {
+        name: "Bob",
+        isHost: false,
+        connected: true,
+        hand: [],
+        bid: null,
+        isSelf: true,
+      },
     ]);
   });
 
@@ -40,12 +54,15 @@ describe("selectLobbyView", () => {
   it("passes through the Scoring Mode unchanged", () => {
     expect(selectLobbyView(roomState, "Alice").scoringMode).toBeNull();
     expect(
-      selectLobbyView({ ...roomState, scoringMode: "Rascal" }, "Alice").scoringMode,
+      selectLobbyView({ ...roomState, scoringMode: "Rascal" }, "Alice")
+        .scoringMode,
     ).toBe("Rascal");
   });
 
   it("blocks starting the Game with fewer than 3 Players", () => {
-    expect(selectLobbyView(roomState, "Alice").startGameBlockedReason).toBe("TooFewPlayers");
+    expect(selectLobbyView(roomState, "Alice").startGameBlockedReason).toBe(
+      "TooFewPlayers",
+    );
   });
 
   it("does not block starting the Game with a Player count between 3 and 8", () => {
@@ -70,6 +87,8 @@ describe("selectLobbyView", () => {
         bid: null,
       })),
     };
-    expect(selectLobbyView(room, "Alice").startGameBlockedReason).toBe("TooManyPlayers");
+    expect(selectLobbyView(room, "Alice").startGameBlockedReason).toBe(
+      "TooManyPlayers",
+    );
   });
 });

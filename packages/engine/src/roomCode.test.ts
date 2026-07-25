@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { generateRoomCode, ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from "./roomCode.js";
+import {
+  generateRoomCode,
+  ROOM_CODE_ALPHABET,
+  ROOM_CODE_LENGTH,
+} from "./roomCode.js";
 
 describe("generateRoomCode", () => {
   it("returns a code of the expected length using only the human-typeable alphabet", () => {

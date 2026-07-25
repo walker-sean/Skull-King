@@ -11,7 +11,7 @@ Disconnect is the mirror case but isn't client-initiated — socket.io detects i
 Two transition rules, chosen for simplicity in the absence of any stated requirement otherwise:
 
 - **No grace period.** A single disconnect immediately pauses an Active Room (`RoomPaused`); there's no debounce window to absorb a brief network blip. CONTEXT.md and the issue this implements don't call for one, and adding one would need its own timer/expiry design this ticket doesn't ask for.
-- **All-or-nothing resume.** A Paused Room returns to Active only once *every* roster Player is reconnected, not just the one who dropped — matching the issue's acceptance criterion literally ("once all previously-connected Players are back").
+- **All-or-nothing resume.** A Paused Room returns to Active only once _every_ roster Player is reconnected, not just the one who dropped — matching the issue's acceptance criterion literally ("once all previously-connected Players are back").
 
 No actor check was added to either path, per ADR-0005's rule of only adding one where a domain rule says "only X may do this": reconnecting is a state-matching rule (name matches a disconnected seat), not a Host-only privilege, and ADR-0002 already accepts name-only reconnection as the intentional trust model for v1.
 
