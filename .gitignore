@@ -1,0 +1,12 @@
+# Env
+.env
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
