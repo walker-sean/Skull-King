@@ -7,4 +7,5 @@ export const REJECTION_MESSAGES: Record<RejectionEvent["reason"], string> = {
   InvalidName: "Please enter a name.",
   TooFewPlayers: "Need at least 3 Players to start.",
   TooManyPlayers: "At most 8 Players can play at once.",
+  NotHost: "Only the Host can start the Game.",
 };

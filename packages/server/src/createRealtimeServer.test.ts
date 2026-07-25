@@ -219,4 +219,44 @@ describe("createRealtimeServer", () => {
       reason: "RoomNotInLobby",
     });
   });
+
+  it("rejects starting the Game from a Player socket that is not the Host", async () => {
+    const host = await newClient();
+    const created = await emit(host, "createRoom", { hostName: "Alice" });
+    if (!created.ok) throw new Error("expected success");
+    const { roomCode } = created.state;
+    const joiner = await newClient();
+    await emit(joiner, "joinRoom", { roomCode, displayName: "Bob" });
+    await emit(await newClient(), "joinRoom", { roomCode, displayName: "Carol" });
+
+    const response = await emit(joiner, "startGame", { roomCode, scoringMode: "Traditional" });
+
+    expect(response.ok).toBe(false);
+    if (response.ok) throw new Error("expected rejection");
+    expect(response.event).toEqual({
+      type: "StartGameRejected",
+      roomCode,
+      reason: "NotHost",
+    });
+  });
+
+  it("rejects starting the Game from a socket that never created or joined the Room", async () => {
+    const host = await newClient();
+    const created = await emit(host, "createRoom", { hostName: "Alice" });
+    if (!created.ok) throw new Error("expected success");
+    const { roomCode } = created.state;
+    await emit(await newClient(), "joinRoom", { roomCode, displayName: "Bob" });
+    await emit(await newClient(), "joinRoom", { roomCode, displayName: "Carol" });
+
+    const stranger = await newClient();
+    const response = await emit(stranger, "startGame", { roomCode, scoringMode: "Traditional" });
+
+    expect(response.ok).toBe(false);
+    if (response.ok) throw new Error("expected rejection");
+    expect(response.event).toEqual({
+      type: "StartGameRejected",
+      roomCode,
+      reason: "NotHost",
+    });
+  });
 });

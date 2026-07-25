@@ -14,6 +14,14 @@ export function startGame(state: RoomState | null, command: StartGameCommand): E
     };
   }
 
+  const host = state.players.find((player) => player.isHost);
+  if (host === undefined || host.name !== command.actorName) {
+    return {
+      state,
+      events: [{ type: "StartGameRejected", roomCode: command.roomCode, reason: "NotHost" }],
+    };
+  }
+
   if (state.status !== "Lobby") {
     return {
       state,

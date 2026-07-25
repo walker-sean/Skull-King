@@ -4,6 +4,7 @@ export type JoinRejectedReason = "RoomNotFound" | "NameTaken" | "RoomNotInLobby"
 
 export type StartGameRejectedReason =
   | "RoomNotFound"
+  | "NotHost"
   | "TooFewPlayers"
   | "TooManyPlayers"
   | "RoomNotInLobby";
