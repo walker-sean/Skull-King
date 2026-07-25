@@ -57,19 +57,40 @@ export function currentTurnPlayerName(state: RoomState): string | null {
 }
 
 /**
- * Ranks two cards under the plain-card slice of the Capture Hierarchy (see CONTEXT.md):
- * the Trump Suit beats every other Suit regardless of number, and otherwise only the led
- * Suit can win, highest number first. Special Cards aren't ranked here yet — ticket #7 adds
- * the full hierarchy (Escape/Pirate/Skull King/Mermaid), so a non-Suited card never wins
- * a comparison in this ticket's scope.
+ * A card's rank tier in the Capture Hierarchy (see CONTEXT.md): Escape < Suited Cards
+ * < Pirate < Skull King < Mermaid. A Tigress resolves to the Pirate or Escape tier based
+ * on how it was declared when played. Loot/Kraken/White Whale aren't ranked here — they're
+ * Advanced Cards out of this ticket's scope.
  */
-function comparePlainCards(a: Card, b: Card, led: Suit | null): number {
-  const aSuited = a.kind === "Suited";
-  const bSuited = b.kind === "Suited";
-  if (!aSuited || !bSuited) {
-    return (aSuited ? 1 : 0) - (bSuited ? 1 : 0);
+function tierOf(card: Card): number {
+  switch (card.kind) {
+    case "Escape":
+      return 0;
+    case "Suited":
+      return 1;
+    case "Pirate":
+      return 2;
+    case "SkullKing":
+      return 3;
+    case "Mermaid":
+      return 4;
+    case "Tigress":
+      return card.declaredAs === "Pirate" ? 2 : 0;
+    default:
+      return -1;
   }
+}
 
+/**
+ * Ranks two Suited cards against each other: the Trump Suit beats every other Suit
+ * regardless of number, and otherwise only the led Suit can win, highest number first.
+ * Only called once both cards are known to share the Suited tier.
+ */
+function compareSuited(
+  a: Extract<Card, { kind: "Suited" }>,
+  b: Extract<Card, { kind: "Suited" }>,
+  led: Suit | null,
+): number {
   const aIsTrump = a.suit === TRUMP_SUIT;
   const bIsTrump = b.suit === TRUMP_SUIT;
   if (aIsTrump !== bIsTrump) {
@@ -87,10 +108,29 @@ function comparePlainCards(a: Card, b: Card, led: Suit | null): number {
   return aFollowsLed && bFollowsLed ? a.rank - b.rank : 0;
 }
 
+/**
+ * Ranks two cards under the full Capture Hierarchy (see CONTEXT.md). Cards in the same
+ * tier (e.g. two Pirates, both Mermaids, or several Escapes) rank equal here; combined
+ * with resolveTrickWinner's reduce — which only replaces the leader on a strictly greater
+ * comparison — that means the earliest one played keeps the win, matching the rulebook's
+ * tie-break for duplicate Special Cards.
+ */
+function compareCards(a: Card, b: Card, led: Suit | null): number {
+  const aTier = tierOf(a);
+  const bTier = tierOf(b);
+  if (aTier !== bTier) {
+    return aTier - bTier;
+  }
+  if (a.kind === "Suited" && b.kind === "Suited") {
+    return compareSuited(a, b, led);
+  }
+  return 0;
+}
+
 function resolveTrickWinner(trick: readonly TrickPlay[]): string {
   const led = ledSuit(trick);
   return trick.reduce((best, play) =>
-    comparePlainCards(play.card, best.card, led) > 0 ? play : best,
+    compareCards(play.card, best.card, led) > 0 ? play : best,
   ).playerName;
 }
 
@@ -123,6 +163,16 @@ export function playCard(state: RoomState | null, command: PlayCardCommand): Eng
   const cardIndex = player.hand.findIndex((card) => cardsEqual(card, command.card));
   if (cardIndex === -1) {
     return rejected(state, command.roomCode, "CardNotInHand");
+  }
+
+  // A Tigress must be declared as a Pirate or an Escape at the moment it's played
+  // (see CONTEXT.md's Tigress entry) — resolveTrickWinner relies on that declaration.
+  if (
+    command.card.kind === "Tigress" &&
+    command.card.declaredAs !== "Pirate" &&
+    command.card.declaredAs !== "Escape"
+  ) {
+    return rejected(state, command.roomCode, "InvalidTigressDeclaration");
   }
 
   const led = ledSuit(state.currentTrick);

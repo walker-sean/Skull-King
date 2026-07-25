@@ -71,7 +71,8 @@ export type PlayCardRejectedReason =
   | "BiddingIncomplete"
   | "NotYourTurn"
   | "CardNotInHand"
-  | "MustFollowSuit";
+  | "MustFollowSuit"
+  | "InvalidTigressDeclaration";
 
 export interface CardPlayedEvent {
   type: "CardPlayed";

@@ -373,4 +373,297 @@ describe("playCard", () => {
       ]);
     });
   });
+
+  describe("full Capture Hierarchy resolution", () => {
+    function winnerOf(playerHands: [string, Card][]): string {
+      const players = playerHands.map(([name, card], index) =>
+        playerWith(name, [card], index === 0),
+      );
+      let room = activeRoom(players);
+      let result = playCard(room, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: playerHands[0]![1],
+        actorName: playerHands[0]![0],
+      });
+      room = result.state as RoomState;
+      for (let i = 1; i < playerHands.length; i++) {
+        result = playCard(room, {
+          type: "PlayCard",
+          roomCode: "ABCD",
+          card: playerHands[i]![1],
+          actorName: playerHands[i]![0],
+        });
+        room = (result.state as RoomState) ?? room;
+      }
+      const winEvent = result.events.find((event) => event.type === "TrickWon");
+      if (winEvent === undefined || winEvent.type !== "TrickWon") {
+        throw new Error("Trick did not resolve to a winner");
+      }
+      return winEvent.winnerName;
+    }
+
+    const escape: Card = { kind: "Escape" };
+    const pirate: Card = { kind: "Pirate" };
+    const skullKing: Card = { kind: "SkullKing" };
+    const mermaid: Card = { kind: "Mermaid" };
+    const tigressAsPirate: Card = { kind: "Tigress", declaredAs: "Pirate" };
+    const tigressAsEscape: Card = { kind: "Tigress", declaredAs: "Escape" };
+
+    it("Escape always loses the Trick it's played into, even to a low Suited card", () => {
+      expect(
+        winnerOf([
+          ["Alice", escape],
+          ["Bob", suited("Parrot", 1)],
+        ]),
+      ).toBe("Bob");
+    });
+
+    it("Escape always loses the Trick it's played into, even to a Pirate, the Skull King, or a Mermaid", () => {
+      expect(
+        winnerOf([
+          ["Alice", escape],
+          ["Bob", pirate],
+        ]),
+      ).toBe("Bob");
+      expect(
+        winnerOf([
+          ["Alice", escape],
+          ["Bob", skullKing],
+        ]),
+      ).toBe("Bob");
+      expect(
+        winnerOf([
+          ["Alice", escape],
+          ["Bob", mermaid],
+        ]),
+      ).toBe("Bob");
+    });
+
+    it("the Skull King beats a led-Suit card and a Trump card", () => {
+      expect(
+        winnerOf([
+          ["Alice", suited("Parrot", 14)],
+          ["Bob", skullKing],
+        ]),
+      ).toBe("Bob");
+      expect(
+        winnerOf([
+          ["Alice", suited("JollyRoger", 14)],
+          ["Bob", skullKing],
+        ]),
+      ).toBe("Bob");
+    });
+
+    it("a Mermaid beats a led-Suit card and a Trump card", () => {
+      expect(
+        winnerOf([
+          ["Alice", suited("Parrot", 14)],
+          ["Bob", mermaid],
+        ]),
+      ).toBe("Bob");
+      expect(
+        winnerOf([
+          ["Alice", suited("JollyRoger", 14)],
+          ["Bob", mermaid],
+        ]),
+      ).toBe("Bob");
+    });
+
+    it("a Pirate beats a led-Suit card", () => {
+      expect(
+        winnerOf([
+          ["Alice", suited("Parrot", 14)],
+          ["Bob", pirate],
+        ]),
+      ).toBe("Bob");
+    });
+
+    it("a Pirate beats a Trump card", () => {
+      expect(
+        winnerOf([
+          ["Alice", suited("JollyRoger", 14)],
+          ["Bob", pirate],
+        ]),
+      ).toBe("Bob");
+    });
+
+    it("the Skull King beats a Pirate", () => {
+      expect(
+        winnerOf([
+          ["Alice", pirate],
+          ["Bob", skullKing],
+        ]),
+      ).toBe("Bob");
+    });
+
+    it("a Mermaid beats a Pirate", () => {
+      expect(
+        winnerOf([
+          ["Alice", pirate],
+          ["Bob", mermaid],
+        ]),
+      ).toBe("Bob");
+    });
+
+    it("a Mermaid beats the Skull King", () => {
+      expect(
+        winnerOf([
+          ["Alice", skullKing],
+          ["Bob", mermaid],
+        ]),
+      ).toBe("Bob");
+    });
+
+    it("a Mermaid beats a Pirate and the Skull King regardless of play order: Mermaid first", () => {
+      expect(
+        winnerOf([
+          ["Alice", mermaid],
+          ["Bob", pirate],
+          ["Carol", skullKing],
+        ]),
+      ).toBe("Alice");
+    });
+
+    it("a Mermaid beats a Pirate and the Skull King regardless of play order: Mermaid last", () => {
+      expect(
+        winnerOf([
+          ["Alice", pirate],
+          ["Bob", skullKing],
+          ["Carol", mermaid],
+        ]),
+      ).toBe("Carol");
+    });
+
+    it("of two Pirates played in the same Trick, the first one played wins", () => {
+      expect(
+        winnerOf([
+          ["Alice", pirate],
+          ["Bob", pirate],
+        ]),
+      ).toBe("Alice");
+    });
+
+    it("of two Mermaids played in the same Trick, the first one played wins", () => {
+      expect(
+        winnerOf([
+          ["Alice", mermaid],
+          ["Bob", mermaid],
+        ]),
+      ).toBe("Alice");
+    });
+
+    it("when every card played is an Escape, the first one played wins", () => {
+      expect(
+        winnerOf([
+          ["Alice", escape],
+          ["Bob", escape],
+        ]),
+      ).toBe("Alice");
+    });
+
+    it("a Tigress declared as a Pirate beats a Suited card but loses to the Skull King", () => {
+      expect(
+        winnerOf([
+          ["Alice", suited("Parrot", 14)],
+          ["Bob", tigressAsPirate],
+        ]),
+      ).toBe("Bob");
+      expect(
+        winnerOf([
+          ["Alice", tigressAsPirate],
+          ["Bob", skullKing],
+        ]),
+      ).toBe("Bob");
+    });
+
+    it("a Tigress declared as an Escape always loses, even to a low Suited card", () => {
+      expect(
+        winnerOf([
+          ["Alice", tigressAsEscape],
+          ["Bob", suited("Parrot", 1)],
+        ]),
+      ).toBe("Bob");
+    });
+
+    it("a Tigress declared as an Escape always loses to a Pirate, the Skull King, or a Mermaid", () => {
+      expect(
+        winnerOf([
+          ["Alice", tigressAsEscape],
+          ["Bob", pirate],
+        ]),
+      ).toBe("Bob");
+      expect(
+        winnerOf([
+          ["Alice", tigressAsEscape],
+          ["Bob", skullKing],
+        ]),
+      ).toBe("Bob");
+      expect(
+        winnerOf([
+          ["Alice", tigressAsEscape],
+          ["Bob", mermaid],
+        ]),
+      ).toBe("Bob");
+    });
+
+    it("a Tigress declared as a Pirate loses to a Mermaid, same as a real Pirate", () => {
+      expect(
+        winnerOf([
+          ["Alice", tigressAsPirate],
+          ["Bob", mermaid],
+        ]),
+      ).toBe("Bob");
+    });
+
+    it("a Tigress declared as a Pirate ties with a real Pirate: the first one played wins", () => {
+      expect(
+        winnerOf([
+          ["Alice", tigressAsPirate],
+          ["Bob", pirate],
+        ]),
+      ).toBe("Alice");
+      expect(
+        winnerOf([
+          ["Alice", pirate],
+          ["Bob", tigressAsPirate],
+        ]),
+      ).toBe("Alice");
+    });
+
+    it("a Tigress declared as an Escape ties with a real Escape: the first one played wins", () => {
+      expect(
+        winnerOf([
+          ["Alice", tigressAsEscape],
+          ["Bob", escape],
+        ]),
+      ).toBe("Alice");
+      expect(
+        winnerOf([
+          ["Alice", escape],
+          ["Bob", tigressAsEscape],
+        ]),
+      ).toBe("Alice");
+    });
+
+    it("rejects playing a Tigress with no declaration", () => {
+      const players = [
+        playerWith("Alice", [{ kind: "Tigress" }], true),
+        playerWith("Bob", [suited("Parrot", 1)]),
+      ];
+      const room = activeRoom(players);
+
+      const result = playCard(room, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: { kind: "Tigress" },
+        actorName: "Alice",
+      });
+
+      expect(result.state).toEqual(room);
+      expect(result.events).toEqual([
+        { type: "PlayCardRejected", roomCode: "ABCD", reason: "InvalidTigressDeclaration" },
+      ]);
+    });
+  });
 });
