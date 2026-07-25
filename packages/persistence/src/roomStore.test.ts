@@ -9,10 +9,11 @@ const lobbyRoom: RoomState = {
   roomCode: "ABCD",
   status: "Lobby",
   players: [
-    { name: "Alice", isHost: true, connected: true },
-    { name: "Bob", isHost: false, connected: true },
+    { name: "Alice", isHost: true, connected: true, hand: [] },
+    { name: "Bob", isHost: false, connected: true, hand: [] },
   ],
   scoringMode: null,
+  currentRound: null,
 };
 
 describe("RoomStore", () => {
@@ -45,7 +46,7 @@ describe("RoomStore", () => {
     store.saveRoom(lobbyRoom);
     const updated: RoomState = {
       ...lobbyRoom,
-      players: [...lobbyRoom.players, { name: "Cara", isHost: false, connected: true }],
+      players: [...lobbyRoom.players, { name: "Cara", isHost: false, connected: true, hand: [] }],
     };
     store.saveRoom(updated);
 
@@ -54,7 +55,13 @@ describe("RoomStore", () => {
 
   it("lists Room Codes that are not Completed", () => {
     store.saveRoom(lobbyRoom);
-    store.saveRoom({ roomCode: "WXYZ", status: "Completed", players: [], scoringMode: "Traditional" });
+    store.saveRoom({
+      roomCode: "WXYZ",
+      status: "Completed",
+      players: [],
+      scoringMode: "Traditional",
+      currentRound: 10,
+    });
 
     expect(store.listNonCompletedRoomCodes()).toEqual(["ABCD"]);
   });
@@ -64,10 +71,11 @@ describe("RoomStore", () => {
       roomCode: "WXYZ",
       status: "Completed",
       players: [
-        { name: "Alice", isHost: true, connected: true },
-        { name: "Bob", isHost: false, connected: false },
+        { name: "Alice", isHost: true, connected: true, hand: [] },
+        { name: "Bob", isHost: false, connected: false, hand: [] },
       ],
       scoringMode: "Rascal",
+      currentRound: 10,
     };
     store.saveRoom(completedRoom);
 

@@ -31,8 +31,9 @@ function createMockSocketClient(overrides: Partial<SocketClient> = {}): SocketCl
 const lobbyState: RoomState = {
   roomCode: "ABCD",
   status: "Lobby",
-  players: [{ name: "Alice", isHost: true, connected: true }],
+  players: [{ name: "Alice", isHost: true, connected: true, hand: [] }],
   scoringMode: null,
+  currentRound: null,
 };
 
 describe("App", () => {
@@ -61,7 +62,7 @@ describe("App", () => {
   it("joins a Room and shows the Lobby roster on success", async () => {
     const joinedState: RoomState = {
       ...lobbyState,
-      players: [...lobbyState.players, { name: "Bob", isHost: false, connected: true }],
+      players: [...lobbyState.players, { name: "Bob", isHost: false, connected: true, hand: [] }],
     };
     const socketClient = createMockSocketClient({
       joinRoom: vi.fn().mockResolvedValue({ ok: true, state: joinedState }),
@@ -106,7 +107,7 @@ describe("App", () => {
 
     const updated: RoomState = {
       ...lobbyState,
-      players: [...lobbyState.players, { name: "Bob", isHost: false, connected: true }],
+      players: [...lobbyState.players, { name: "Bob", isHost: false, connected: true, hand: [] }],
     };
     (socketClient as unknown as { emitRoomState: (s: RoomState) => void }).emitRoomState(updated);
 
@@ -132,8 +133,8 @@ describe("App", () => {
       ...lobbyState,
       players: [
         ...lobbyState.players,
-        { name: "Bob", isHost: false, connected: true },
-        { name: "Carol", isHost: false, connected: true },
+        { name: "Bob", isHost: false, connected: true, hand: [] },
+        { name: "Carol", isHost: false, connected: true, hand: [] },
       ],
     };
     const startedState: RoomState = {
@@ -164,8 +165,8 @@ describe("App", () => {
       ...lobbyState,
       players: [
         ...lobbyState.players,
-        { name: "Bob", isHost: false, connected: true },
-        { name: "Carol", isHost: false, connected: true },
+        { name: "Bob", isHost: false, connected: true, hand: [] },
+        { name: "Carol", isHost: false, connected: true, hand: [] },
       ],
     };
     const socketClient = createMockSocketClient({

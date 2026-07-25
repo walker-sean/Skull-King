@@ -38,7 +38,7 @@ export function joinRoom(state: RoomState | null, command: JoinRoomCommand): Eng
   return {
     state: {
       ...state,
-      players: [...state.players, { name: displayName, isHost: false, connected: true }],
+      players: [...state.players, { name: displayName, isHost: false, connected: true, hand: [] }],
     },
     events: [{ type: "PlayerJoined", roomCode: command.roomCode, playerName: displayName }],
   };

@@ -3,3 +3,5 @@ export * from "./normalizeName.js";
 export * from "./createRoom.js";
 export * from "./joinRoom.js";
 export * from "./startGame.js";
+export * from "./deck.js";
+export * from "./dealing.js";

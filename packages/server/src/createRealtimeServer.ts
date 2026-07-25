@@ -6,8 +6,10 @@ import type {
   ClientToServerEvents,
   DomainEvent,
   RejectionEvent,
+  RoomState,
   ServerToClientEvents,
 } from "@skull-king/shared";
+import { redactHandsFor } from "./redactRoomState.js";
 
 export interface RealtimeServer {
   httpServer: HttpServer;
@@ -47,9 +49,23 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
     cors: { origin: "*" },
   });
 
-  io.on("connection", (socket) => {
-    let session: SocketSession | null = null;
+  // Keyed by socket id so a broadcast to a whole Room can look up which Player
+  // each destination socket is bound to and redact that viewer's Room state.
+  const sessionsBySocketId = new Map<string, SocketSession>();
 
+  async function broadcastRoomState(roomCode: string, state: RoomState): Promise<void> {
+    const sockets = await io.in(roomCode).fetchSockets();
+    for (const destination of sockets) {
+      const destinationSession = sessionsBySocketId.get(destination.id);
+      const viewerName =
+        destinationSession !== undefined && destinationSession.roomCode === roomCode
+          ? destinationSession.playerName
+          : null;
+      destination.emit("roomState", redactHandsFor(state, viewerName));
+    }
+  }
+
+  io.on("connection", (socket) => {
     socket.on("createRoom", ({ hostName }, callback) => {
       const existingCodes = new Set(store.listNonCompletedRoomCodes());
       const roomCode = generateRoomCode(existingCodes);
@@ -64,10 +80,13 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
       void socket.join(result.state.roomCode);
       const roomCreated = result.events.find((event) => event.type === "RoomCreated");
       if (roomCreated !== undefined) {
-        session = { roomCode: result.state.roomCode, playerName: roomCreated.hostName };
+        sessionsBySocketId.set(socket.id, {
+          roomCode: result.state.roomCode,
+          playerName: roomCreated.hostName,
+        });
       }
-      callback({ ok: true, state: result.state });
-      io.to(result.state.roomCode).emit("roomState", result.state);
+      callback({ ok: true, state: redactHandsFor(result.state, roomCreated?.hostName ?? null) });
+      void broadcastRoomState(result.state.roomCode, result.state);
     });
 
     socket.on("joinRoom", ({ roomCode, displayName }, callback) => {
@@ -84,16 +103,20 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
       void socket.join(normalizedCode);
       const playerJoined = result.events.find((event) => event.type === "PlayerJoined");
       if (playerJoined !== undefined) {
-        session = { roomCode: normalizedCode, playerName: playerJoined.playerName };
+        sessionsBySocketId.set(socket.id, {
+          roomCode: normalizedCode,
+          playerName: playerJoined.playerName,
+        });
       }
-      callback({ ok: true, state: result.state });
-      io.to(normalizedCode).emit("roomState", result.state);
+      callback({ ok: true, state: redactHandsFor(result.state, playerJoined?.playerName ?? null) });
+      void broadcastRoomState(normalizedCode, result.state);
     });
 
     socket.on("startGame", ({ roomCode, scoringMode }, callback) => {
       const normalizedCode = roomCode.trim().toUpperCase();
       const state = store.loadRoom(normalizedCode);
-      const actorName = session !== null && session.roomCode === normalizedCode ? session.playerName : null;
+      const session = sessionsBySocketId.get(socket.id);
+      const actorName = session !== undefined && session.roomCode === normalizedCode ? session.playerName : null;
       const result = startGame(state, {
         type: "StartGame",
         roomCode: normalizedCode,
@@ -107,8 +130,12 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
       }
 
       store.saveRoom(result.state);
-      callback({ ok: true, state: result.state });
-      io.to(normalizedCode).emit("roomState", result.state);
+      callback({ ok: true, state: redactHandsFor(result.state, actorName) });
+      void broadcastRoomState(normalizedCode, result.state);
+    });
+
+    socket.on("disconnect", () => {
+      sessionsBySocketId.delete(socket.id);
     });
   });
 

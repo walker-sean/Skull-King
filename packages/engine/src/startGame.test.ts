@@ -7,6 +7,7 @@ function playersNamed(count: number): Player[] {
     name: `Player${index + 1}`,
     isHost: index === 0,
     connected: true,
+    hand: [],
   }));
 }
 
@@ -16,11 +17,12 @@ function lobbyWith(count: number): RoomState {
     status: "Lobby",
     players: playersNamed(count),
     scoringMode: null,
+    currentRound: null,
   };
 }
 
 describe("startGame", () => {
-  it("starts the Game, locking in the Scoring Mode and moving the Room to Active", () => {
+  it("starts the Game, locking in the Scoring Mode, moving the Room to Active, and dealing Round 1", () => {
     const room = lobbyWith(3);
     const result = startGame(room, {
       type: "StartGame",
@@ -29,7 +31,15 @@ describe("startGame", () => {
       actorName: "Player1",
     });
 
-    expect(result.state).toEqual({ ...room, status: "Active", scoringMode: "Traditional" });
+    expect(result.state?.status).toBe("Active");
+    expect(result.state?.scoringMode).toBe("Traditional");
+    expect(result.state?.currentRound).toBe(1);
+    expect(result.state?.players.map((player) => player.name)).toEqual(
+      room.players.map((player) => player.name),
+    );
+    for (const player of result.state?.players ?? []) {
+      expect(player.hand).toHaveLength(1);
+    }
     expect(result.events).toEqual([
       { type: "GameStarted", roomCode: "ABCD", scoringMode: "Traditional" },
     ]);

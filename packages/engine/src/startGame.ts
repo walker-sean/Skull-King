@@ -6,6 +6,9 @@ import {
   type StartGameCommand,
   type StartGameRejectedReason,
 } from "@skull-king/shared";
+import { dealRound } from "./dealing.js";
+
+const FIRST_ROUND = 1;
 
 function rejected(
   state: RoomState | null,
@@ -40,8 +43,23 @@ export function startGame(state: RoomState | null, command: StartGameCommand): E
     return rejected(state, command.roomCode, "TooManyPlayers");
   }
 
+  const hands = dealRound(
+    state.players.map((player) => player.name),
+    FIRST_ROUND,
+  );
+  const players = state.players.map((player) => ({
+    ...player,
+    hand: hands.get(player.name) ?? [],
+  }));
+
   return {
-    state: { ...state, status: "Active", scoringMode: command.scoringMode },
+    state: {
+      ...state,
+      status: "Active",
+      scoringMode: command.scoringMode,
+      currentRound: FIRST_ROUND,
+      players,
+    },
     events: [
       { type: "GameStarted", roomCode: command.roomCode, scoringMode: command.scoringMode },
     ],

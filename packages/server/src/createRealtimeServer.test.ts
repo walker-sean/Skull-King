@@ -5,7 +5,12 @@ import type { AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { io as ioClient, type Socket as ClientSocket } from "socket.io-client";
 import { openRoomStore, type RoomStore } from "@skull-king/persistence";
-import type { ClientToServerEvents, CommandResponse, ServerToClientEvents } from "@skull-king/shared";
+import type {
+  ClientToServerEvents,
+  CommandResponse,
+  RoomState,
+  ServerToClientEvents,
+} from "@skull-king/shared";
 import { createRealtimeServer } from "./createRealtimeServer.js";
 
 type Client = ClientSocket<ServerToClientEvents, ClientToServerEvents>;
@@ -73,7 +78,9 @@ describe("createRealtimeServer", () => {
     expect(response.ok).toBe(true);
     if (!response.ok) throw new Error("expected success");
     expect(response.state.status).toBe("Lobby");
-    expect(response.state.players).toEqual([{ name: "Alice", isHost: true, connected: true }]);
+    expect(response.state.players).toEqual([
+      { name: "Alice", isHost: true, connected: true, hand: [] },
+    ]);
     expect(response.state.roomCode).toHaveLength(4);
   });
 
@@ -93,8 +100,8 @@ describe("createRealtimeServer", () => {
     expect(joinResponse.ok).toBe(true);
     if (!joinResponse.ok) throw new Error("expected success");
     expect(joinResponse.state.players).toEqual([
-      { name: "Alice", isHost: true, connected: true },
-      { name: "Bob", isHost: false, connected: true },
+      { name: "Alice", isHost: true, connected: true, hand: [] },
+      { name: "Bob", isHost: false, connected: true, hand: [] },
     ]);
 
     const broadcastState = await broadcastReceived;
@@ -179,6 +186,37 @@ describe("createRealtimeServer", () => {
     expect(response.state.status).toBe("Active");
     expect(response.state.scoringMode).toBe("Traditional");
     expect(await broadcastReceived).toEqual(response.state);
+  });
+
+  it("deals Round 1 on start, showing each Player only their own hand while the Round number is visible to all", async () => {
+    const host = await newClient();
+    const created = await emit(host, "createRoom", { hostName: "Alice" });
+    if (!created.ok) throw new Error("expected success");
+    const { roomCode } = created.state;
+    const bob = await newClient();
+    await emit(bob, "joinRoom", { roomCode, displayName: "Bob" });
+    await emit(await newClient(), "joinRoom", { roomCode, displayName: "Carol" });
+
+    const bobStateReceived = new Promise<RoomState>((resolve) => {
+      bob.on("roomState", (state) => {
+        if (state.status === "Active") resolve(state);
+      });
+    });
+
+    const response = await emit(host, "startGame", { roomCode, scoringMode: "Traditional" });
+    if (!response.ok) throw new Error("expected success");
+
+    expect(response.state.currentRound).toBe(1);
+    const hostView = response.state.players;
+    expect(hostView.find((p) => p.name === "Alice")?.hand).toHaveLength(1);
+    expect(hostView.find((p) => p.name === "Bob")?.hand).toHaveLength(0);
+    expect(hostView.find((p) => p.name === "Carol")?.hand).toHaveLength(0);
+
+    const bobState = await bobStateReceived;
+    expect(bobState.currentRound).toBe(1);
+    expect(bobState.players.find((p) => p.name === "Bob")?.hand).toHaveLength(1);
+    expect(bobState.players.find((p) => p.name === "Alice")?.hand).toHaveLength(0);
+    expect(bobState.players.find((p) => p.name === "Carol")?.hand).toHaveLength(0);
   });
 
   it("rejects starting the Game with fewer than 3 Players", async () => {
