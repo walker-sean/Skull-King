@@ -1,6 +1,13 @@
 import { createServer, type Server as HttpServer } from "node:http";
 import { Server as SocketIoServer } from "socket.io";
-import { createRoom, generateRoomCode, joinRoom, startGame, submitBid } from "@skull-king/engine";
+import {
+  createRoom,
+  generateRoomCode,
+  joinRoom,
+  playCard,
+  startGame,
+  submitBid,
+} from "@skull-king/engine";
 import type { RoomStore } from "@skull-king/persistence";
 import type {
   ClientToServerEvents,
@@ -32,7 +39,8 @@ function isRejectionEvent(event: DomainEvent): event is RejectionEvent {
     event.type === "RoomCreateRejected" ||
     event.type === "JoinRejected" ||
     event.type === "StartGameRejected" ||
-    event.type === "SubmitBidRejected"
+    event.type === "SubmitBidRejected" ||
+    event.type === "PlayCardRejected"
   );
 }
 
@@ -144,6 +152,28 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
         type: "SubmitBid",
         roomCode: normalizedCode,
         bid,
+        actorName,
+      });
+
+      if (result.state === null || result.events.some(isRejectionEvent)) {
+        callback({ ok: false, event: firstRejection(result.events) });
+        return;
+      }
+
+      store.saveRoom(result.state);
+      callback({ ok: true, state: redactRoomStateFor(result.state, actorName) });
+      void broadcastRoomState(normalizedCode, result.state);
+    });
+
+    socket.on("playCard", ({ roomCode, card }, callback) => {
+      const normalizedCode = roomCode.trim().toUpperCase();
+      const state = store.loadRoom(normalizedCode);
+      const session = sessionsBySocketId.get(socket.id);
+      const actorName = session !== undefined && session.roomCode === normalizedCode ? session.playerName : null;
+      const result = playCard(state, {
+        type: "PlayCard",
+        roomCode: normalizedCode,
+        card,
         actorName,
       });
 

@@ -11,6 +11,8 @@ const roomState: RoomState = {
   ],
   scoringMode: null,
   currentRound: null,
+  currentTrick: null,
+  trickLeader: null,
 };
 
 describe("selectLobbyView", () => {

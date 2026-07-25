@@ -17,6 +17,12 @@ export interface Player {
   bid: number | null;
 }
 
+/** One Player's card played into the current Trick, in the order it was played. */
+export interface TrickPlay {
+  playerName: string;
+  card: Card;
+}
+
 export interface RoomState {
   roomCode: string;
   status: RoomStatus;
@@ -25,4 +31,8 @@ export interface RoomState {
   scoringMode: ScoringMode | null;
   /** The Round number in progress (1-10); null while the Room is still in Lobby. */
   currentRound: number | null;
+  /** Cards played into the Trick in progress, in play order; null while the Room is still in Lobby. */
+  currentTrick: TrickPlay[] | null;
+  /** Who leads the current (or next) Trick; null while the Room is still in Lobby. */
+  trickLeader: string | null;
 }

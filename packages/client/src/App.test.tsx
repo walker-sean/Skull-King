@@ -35,6 +35,8 @@ const lobbyState: RoomState = {
   players: [{ name: "Alice", isHost: true, connected: true, hand: [], bid: null }],
   scoringMode: null,
   currentRound: null,
+  currentTrick: null,
+  trickLeader: null,
 };
 
 describe("App", () => {

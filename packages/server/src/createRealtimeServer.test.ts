@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { io as ioClient, type Socket as ClientSocket } from "socket.io-client";
 import { openRoomStore, type RoomStore } from "@skull-king/persistence";
 import type {
+  Card,
   ClientToServerEvents,
   CommandResponse,
   RoomState,
@@ -25,7 +26,7 @@ function connectClient(port: number): Promise<Client> {
 
 function emit<Req>(
   socket: Client,
-  event: "createRoom" | "joinRoom" | "startGame" | "submitBid",
+  event: "createRoom" | "joinRoom" | "startGame" | "submitBid" | "playCard",
   request: Req,
 ): Promise<CommandResponse> {
   return new Promise((resolve) => {
@@ -366,5 +367,67 @@ describe("createRealtimeServer", () => {
       roomCode,
       reason: "PlayerNotFound",
     });
+  });
+
+  async function playableRoomOf3(): Promise<{
+    host: Client;
+    bob: Client;
+    carol: Client;
+    roomCode: string;
+    hands: Record<"Alice" | "Bob" | "Carol", Card>;
+  }> {
+    const { host, bob, carol, roomCode } = await startedRoomOf3();
+    const aliceResponse = await emit(host, "submitBid", { roomCode, bid: 0 });
+    const bobResponse = await emit(bob, "submitBid", { roomCode, bid: 0 });
+    const carolResponse = await emit(carol, "submitBid", { roomCode, bid: 0 });
+    if (!aliceResponse.ok || !bobResponse.ok || !carolResponse.ok) {
+      throw new Error("expected successful Bids");
+    }
+
+    const aliceCard = aliceResponse.state.players.find((p) => p.name === "Alice")?.hand[0];
+    const bobCard = bobResponse.state.players.find((p) => p.name === "Bob")?.hand[0];
+    const carolCard = carolResponse.state.players.find((p) => p.name === "Carol")?.hand[0];
+    if (!aliceCard || !bobCard || !carolCard) throw new Error("expected dealt cards");
+
+    return { host, bob, carol, roomCode, hands: { Alice: aliceCard, Bob: bobCard, Carol: carolCard } };
+  }
+
+  it("rejects a play from a Player before their turn", async () => {
+    const { bob, roomCode, hands } = await playableRoomOf3();
+
+    const response = await emit(bob, "playCard", { roomCode, card: hands.Bob });
+
+    expect(response.ok).toBe(false);
+    if (response.ok) throw new Error("expected rejection");
+    expect(response.event).toEqual({ type: "PlayCardRejected", roomCode, reason: "NotYourTurn" });
+  });
+
+  it("lets every Player see cards played into the current Trick, in play order", async () => {
+    const { host, carol, roomCode, hands } = await playableRoomOf3();
+
+    const carolSeesThePlay = new Promise<RoomState>((resolve) => {
+      carol.on("roomState", (state) => {
+        if ((state.currentTrick?.length ?? 0) === 1) resolve(state);
+      });
+    });
+
+    const aliceResponse = await emit(host, "playCard", { roomCode, card: hands.Alice });
+    expect(aliceResponse.ok).toBe(true);
+
+    const carolState = await carolSeesThePlay;
+    expect(carolState.currentTrick).toEqual([{ playerName: "Alice", card: hands.Alice }]);
+  });
+
+  it("has the Trick's winner lead the next Trick, once every Player has played", async () => {
+    const { host, bob, carol, roomCode, hands } = await playableRoomOf3();
+
+    await emit(host, "playCard", { roomCode, card: hands.Alice });
+    await emit(bob, "playCard", { roomCode, card: hands.Bob });
+    const response = await emit(carol, "playCard", { roomCode, card: hands.Carol });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("expected success");
+    expect(response.state.currentTrick).toEqual([]);
+    expect(["Alice", "Bob", "Carol"]).toContain(response.state.trickLeader);
   });
 });

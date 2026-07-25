@@ -1,3 +1,4 @@
+import type { Card } from "./card.js";
 import type { RoomState, ScoringMode } from "./room.js";
 import type { RejectionEvent } from "./events.js";
 
@@ -20,6 +21,11 @@ export interface SubmitBidRequest {
   bid: number;
 }
 
+export interface PlayCardRequest {
+  roomCode: string;
+  card: Card;
+}
+
 export type CommandResponse =
   | { ok: true; state: RoomState }
   | { ok: false; event: RejectionEvent };
@@ -33,4 +39,5 @@ export interface ClientToServerEvents {
   joinRoom: (request: JoinRoomRequest, callback: (response: CommandResponse) => void) => void;
   startGame: (request: StartGameRequest, callback: (response: CommandResponse) => void) => void;
   submitBid: (request: SubmitBidRequest, callback: (response: CommandResponse) => void) => void;
+  playCard: (request: PlayCardRequest, callback: (response: CommandResponse) => void) => void;
 }

@@ -21,12 +21,15 @@ function playersWithHands(handSize: number, count: number): Player[] {
 }
 
 function activeRoomWith(handSize: number, count: number): RoomState {
+  const players = playersWithHands(handSize, count);
   return {
     roomCode: "ABCD",
     status: "Active",
-    players: playersWithHands(handSize, count),
+    players,
     scoringMode: "Traditional",
     currentRound: handSize,
+    currentTrick: [],
+    trickLeader: players[0]?.name ?? null,
   };
 }
 

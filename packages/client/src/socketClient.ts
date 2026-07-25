@@ -1,5 +1,6 @@
 import { io, type Socket } from "socket.io-client";
 import type {
+  Card,
   ClientToServerEvents,
   CommandResponse,
   RoomState,
@@ -12,6 +13,7 @@ export interface SocketClient {
   joinRoom(roomCode: string, displayName: string): Promise<CommandResponse>;
   startGame(roomCode: string, scoringMode: ScoringMode): Promise<CommandResponse>;
   submitBid(roomCode: string, bid: number): Promise<CommandResponse>;
+  playCard(roomCode: string, card: Card): Promise<CommandResponse>;
   onRoomState(handler: (state: RoomState) => void): () => void;
   disconnect(): void;
 }
@@ -41,6 +43,12 @@ export function createSocketClient(url: string): SocketClient {
     submitBid(roomCode: string, bid: number): Promise<CommandResponse> {
       return new Promise((resolve) => {
         socket.emit("submitBid", { roomCode, bid }, resolve);
+      });
+    },
+
+    playCard(roomCode: string, card: Card): Promise<CommandResponse> {
+      return new Promise((resolve) => {
+        socket.emit("playCard", { roomCode, card }, resolve);
       });
     },
 

@@ -1,3 +1,4 @@
+import type { Card } from "./card.js";
 import type { ScoringMode } from "./room.js";
 
 export type JoinRejectedReason = "RoomNotFound" | "NameTaken" | "RoomNotInLobby" | "InvalidName";
@@ -63,6 +64,34 @@ export interface SubmitBidRejectedEvent {
   reason: SubmitBidRejectedReason;
 }
 
+export type PlayCardRejectedReason =
+  | "RoomNotFound"
+  | "RoomNotActive"
+  | "PlayerNotFound"
+  | "BiddingIncomplete"
+  | "NotYourTurn"
+  | "CardNotInHand"
+  | "MustFollowSuit";
+
+export interface CardPlayedEvent {
+  type: "CardPlayed";
+  roomCode: string;
+  playerName: string;
+  card: Card;
+}
+
+export interface TrickWonEvent {
+  type: "TrickWon";
+  roomCode: string;
+  winnerName: string;
+}
+
+export interface PlayCardRejectedEvent {
+  type: "PlayCardRejected";
+  roomCode: string;
+  reason: PlayCardRejectedReason;
+}
+
 export type DomainEvent =
   | RoomCreatedEvent
   | RoomCreateRejectedEvent
@@ -71,10 +100,14 @@ export type DomainEvent =
   | GameStartedEvent
   | StartGameRejectedEvent
   | BidSubmittedEvent
-  | SubmitBidRejectedEvent;
+  | SubmitBidRejectedEvent
+  | CardPlayedEvent
+  | TrickWonEvent
+  | PlayCardRejectedEvent;
 
 export type RejectionEvent =
   | RoomCreateRejectedEvent
   | JoinRejectedEvent
   | StartGameRejectedEvent
-  | SubmitBidRejectedEvent;
+  | SubmitBidRejectedEvent
+  | PlayCardRejectedEvent;

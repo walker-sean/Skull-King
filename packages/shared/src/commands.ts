@@ -1,3 +1,4 @@
+import type { Card } from "./card.js";
 import type { ScoringMode } from "./room.js";
 
 export interface CreateRoomCommand {
@@ -28,4 +29,17 @@ export interface SubmitBidCommand {
   actorName: string | null;
 }
 
-export type Command = CreateRoomCommand | JoinRoomCommand | StartGameCommand | SubmitBidCommand;
+export interface PlayCardCommand {
+  type: "PlayCard";
+  roomCode: string;
+  card: Card;
+  /** The Player name bound to the caller's socket session; null if the socket never joined/created a Room. */
+  actorName: string | null;
+}
+
+export type Command =
+  | CreateRoomCommand
+  | JoinRoomCommand
+  | StartGameCommand
+  | SubmitBidCommand
+  | PlayCardCommand;

@@ -18,6 +18,8 @@ export function createRoom(command: CreateRoomCommand): EngineResult {
       players: [{ name: hostName, isHost: true, connected: true, hand: [], bid: null }],
       scoringMode: null,
       currentRound: null,
+      currentTrick: null,
+      trickLeader: null,
     },
     events: [{ type: "RoomCreated", roomCode: command.roomCode, hostName }],
   };

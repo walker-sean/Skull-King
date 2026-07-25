@@ -6,7 +6,7 @@ See [CONTEXT.md](CONTEXT.md) for domain language and [docs/adr/](docs/adr/) for 
 
 ## Status
 
-Early development. Implemented so far: Room creation & join (Lobby), Start Game (player-count gate + Scoring Mode selection), Round dealing with the Hand Size Cap, and private simultaneous Bidding (hidden until every Player has bid, then revealed to all at once).
+Early development. Implemented so far: Room creation & join (Lobby), Start Game (player-count gate + Scoring Mode selection), Round dealing with the Hand Size Cap, private simultaneous Bidding (hidden until every Player has bid, then revealed to all at once), and basic Trick play — turn-order enforcement, follow-suit legality, and plain-card capture resolution (Trump beats other Suits, otherwise highest of the led Suit wins); the winner leads the next Trick. No Special Cards yet.
 
 ## Structure
 

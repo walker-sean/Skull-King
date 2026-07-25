@@ -58,6 +58,8 @@ export function startGame(state: RoomState | null, command: StartGameCommand): E
       status: "Active",
       scoringMode: command.scoringMode,
       currentRound: FIRST_ROUND,
+      currentTrick: [],
+      trickLeader: state.players[0]?.name ?? null,
       players,
     },
     events: [

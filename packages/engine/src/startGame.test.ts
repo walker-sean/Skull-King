@@ -19,6 +19,8 @@ function lobbyWith(count: number): RoomState {
     players: playersNamed(count),
     scoringMode: null,
     currentRound: null,
+    currentTrick: null,
+    trickLeader: null,
   };
 }
 
@@ -35,6 +37,8 @@ describe("startGame", () => {
     expect(result.state?.status).toBe("Active");
     expect(result.state?.scoringMode).toBe("Traditional");
     expect(result.state?.currentRound).toBe(1);
+    expect(result.state?.currentTrick).toEqual([]);
+    expect(result.state?.trickLeader).toBe("Player1");
     expect(result.state?.players.map((player) => player.name)).toEqual(
       room.players.map((player) => player.name),
     );

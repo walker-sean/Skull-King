@@ -6,3 +6,4 @@ export * from "./startGame.js";
 export * from "./deck.js";
 export * from "./dealing.js";
 export * from "./bidding.js";
+export * from "./trickPlay.js";

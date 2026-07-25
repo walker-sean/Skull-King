@@ -11,6 +11,8 @@ describe("createRoom", () => {
       players: [{ name: "Alice", isHost: true, connected: true, hand: [], bid: null }],
       scoringMode: null,
       currentRound: null,
+      currentTrick: null,
+      trickLeader: null,
     });
     expect(result.events).toEqual([{ type: "RoomCreated", roomCode: "ABCD", hostName: "Alice" }]);
   });

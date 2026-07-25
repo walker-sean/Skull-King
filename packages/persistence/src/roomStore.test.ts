@@ -14,6 +14,8 @@ const lobbyRoom: RoomState = {
   ],
   scoringMode: null,
   currentRound: null,
+  currentTrick: null,
+  trickLeader: null,
 };
 
 describe("RoomStore", () => {
@@ -64,6 +66,8 @@ describe("RoomStore", () => {
       players: [],
       scoringMode: "Traditional",
       currentRound: 10,
+      currentTrick: [],
+      trickLeader: "Alice",
     });
 
     expect(store.listNonCompletedRoomCodes()).toEqual(["ABCD"]);
@@ -79,6 +83,8 @@ describe("RoomStore", () => {
       ],
       scoringMode: "Rascal",
       currentRound: 10,
+      currentTrick: [],
+      trickLeader: "Alice",
     };
     store.saveRoom(completedRoom);
 

@@ -12,4 +12,8 @@ export const REJECTION_MESSAGES: Record<RejectionEvent["reason"], string> = {
   PlayerNotFound: "You're not recognized as a Player in this Room.",
   AlreadyBid: "You've already submitted your Bid for this Round.",
   InvalidBid: "That Bid isn't valid for your hand size.",
+  BiddingIncomplete: "Everyone needs to Bid before play can begin.",
+  NotYourTurn: "It's not your turn to play a card.",
+  CardNotInHand: "That card isn't in your hand.",
+  MustFollowSuit: "You must follow the led Suit if you can.",
 };
