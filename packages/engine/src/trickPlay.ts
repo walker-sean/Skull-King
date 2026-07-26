@@ -179,11 +179,16 @@ function compareCards(a: Card, b: Card, led: Suit | null): number {
   return 0;
 }
 
-function capturePlayerName(trick: readonly TrickPlay[]): string {
+/** The Trick's winning play under the normal Capture Hierarchy (see compareCards). */
+function winningPlay(trick: readonly TrickPlay[]): TrickPlay {
   const led = ledSuit(trick);
   return trick.reduce((best, play) =>
     compareCards(play.card, best.card, led) > 0 ? play : best,
-  ).playerName;
+  );
+}
+
+function capturePlayerName(trick: readonly TrickPlay[]): string {
+  return winningPlay(trick).playerName;
 }
 
 /**
@@ -204,6 +209,125 @@ function whaleWinnerName(trick: readonly TrickPlay[]): string | null {
   ).playerName;
 }
 
+/**
+ * Which of a Kraken/White Whale (see CONTEXT.md's Advanced Cards) governs a Trick, if
+ * either appears: whichever was played second overrides the other, since only one
+ * Advanced Card's effect can apply to a given Trick.
+ */
+function trickVoidingEffect(
+  trick: readonly TrickPlay[],
+): TrickVoidingCard | null {
+  const krakenIndex = trick.findIndex((play) => play.card.kind === "Kraken");
+  const whaleIndex = trick.findIndex((play) => play.card.kind === "WhiteWhale");
+
+  if (krakenIndex === -1 && whaleIndex === -1) {
+    return null;
+  }
+  return whaleIndex > krakenIndex ? "WhiteWhale" : "Kraken";
+}
+
+/**
+ * Why the winning card captured a Trick (see CONTEXT.md's Capture Hierarchy entry), one
+ * variant per tier: Escape and Loot at the bottom (a Loot only wins when every other card
+ * is an Escape), Suited split into HighestTrump/HighestLead since those are the only two
+ * ways a Suited card can ever win (see compareSuited), Pirate and SkullKing next, and
+ * Mermaid split by what it overrode — MermaidOverSkullKing takes priority over
+ * MermaidOverPirate when a Trick somehow has both, since a Mermaid beats either regardless
+ * of play order. A White Whale strips every card's identity, so a numbered win under one
+ * gets its own reason rather than being folded into HighestTrump/HighestLead.
+ */
+export type TrickCaptureReason =
+  | { kind: "Escape"; winnerName: string }
+  | { kind: "Loot"; winnerName: string }
+  | { kind: "HighestTrump"; winnerName: string }
+  | { kind: "HighestLead"; winnerName: string }
+  | { kind: "Pirate"; winnerName: string }
+  | { kind: "SkullKing"; winnerName: string }
+  | { kind: "Mermaid"; winnerName: string }
+  | { kind: "MermaidOverPirate"; winnerName: string }
+  | { kind: "MermaidOverSkullKing"; winnerName: string }
+  | { kind: "WhiteWhaleHighestNumber"; winnerName: string };
+
+/**
+ * A resolved Trick's outcome as a discriminated fact for consumers who need to know *why*
+ * a card won (see CONTEXT.md's Capture Hierarchy entry), not just who won. Kept distinct
+ * from a numbered capture reason so a Kraken-voided or White-Whale-voided Trick (see
+ * resolveTrick) can be told apart from an actual capture, rather than being forced into a
+ * reason shape that implies a card won.
+ */
+export type TrickCaptureFact =
+  | ({ outcome: "Captured" } & TrickCaptureReason)
+  | { outcome: "Voided"; voidedBy: TrickVoidingCard };
+
+/**
+ * Classifies the card that already won a comparison (per compareCards) into its Capture
+ * Hierarchy reason kind. Only called with cards capable of winning outright (tierOf >= 0);
+ * Kraken/WhiteWhale are handled by trickCaptureReason before this is ever reached.
+ */
+function classifyWin(
+  card: Card,
+  trick: readonly TrickPlay[],
+): TrickCaptureReason["kind"] {
+  switch (card.kind) {
+    case "Escape":
+      return "Escape";
+    case "Loot":
+      return "Loot";
+    case "Tigress":
+      return card.declaredAs === "Pirate" ? "Pirate" : "Escape";
+    case "Suited":
+      return card.suit === TRUMP_SUIT ? "HighestTrump" : "HighestLead";
+    case "Pirate":
+      return "Pirate";
+    case "SkullKing":
+      return "SkullKing";
+    case "Mermaid": {
+      const hasSkullKing = trick.some((play) => play.card.kind === "SkullKing");
+      if (hasSkullKing) {
+        return "MermaidOverSkullKing";
+      }
+      const hasPirateTier = trick.some(
+        (play) =>
+          play.card.kind === "Pirate" ||
+          (play.card.kind === "Tigress" && play.card.declaredAs === "Pirate"),
+      );
+      return hasPirateTier ? "MermaidOverPirate" : "Mermaid";
+    }
+    default:
+      throw new Error(`Card kind "${card.kind}" cannot win a Trick`);
+  }
+}
+
+/**
+ * The capture-reason counterpart to resolveTrick: given a resolved Trick, reports not just
+ * who won but why (see CONTEXT.md's Capture Hierarchy entry), or that the Trick was voided
+ * by a Kraken or an identity-less White Whale instead of captured at all.
+ */
+export function trickCaptureReason(
+  trick: readonly TrickPlay[],
+): TrickCaptureFact {
+  const effect = trickVoidingEffect(trick);
+
+  if (effect === "Kraken") {
+    return { outcome: "Voided", voidedBy: "Kraken" };
+  }
+
+  if (effect === "WhiteWhale") {
+    const winnerName = whaleWinnerName(trick);
+    if (winnerName === null) {
+      return { outcome: "Voided", voidedBy: "WhiteWhale" };
+    }
+    return { outcome: "Captured", kind: "WhiteWhaleHighestNumber", winnerName };
+  }
+
+  const winner = winningPlay(trick);
+  return {
+    outcome: "Captured",
+    kind: classifyWin(winner.card, trick),
+    winnerName: winner.playerName,
+  };
+}
+
 type TrickResolution =
   | { outcome: "Won"; winnerName: string }
   | {
@@ -222,15 +346,7 @@ type TrickResolution =
  * either for the Kraken's void or for the Alliance/void determination.
  */
 function resolveTrick(trick: readonly TrickPlay[]): TrickResolution {
-  const krakenIndex = trick.findIndex((play) => play.card.kind === "Kraken");
-  const whaleIndex = trick.findIndex((play) => play.card.kind === "WhiteWhale");
-
-  const effect: TrickVoidingCard | null =
-    krakenIndex === -1 && whaleIndex === -1
-      ? null
-      : whaleIndex > krakenIndex
-        ? "WhiteWhale"
-        : "Kraken";
+  const effect = trickVoidingEffect(trick);
 
   if (effect === "Kraken") {
     return {
