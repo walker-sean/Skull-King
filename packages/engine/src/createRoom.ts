@@ -22,6 +22,7 @@ export function createRoom(command: CreateRoomCommand): EngineResult {
           connected: true,
           hand: [],
           bid: null,
+          hasBid: false,
           tricksWon: 0,
           score: 0,
         },

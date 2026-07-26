@@ -9,6 +9,7 @@ function playerWith(name: string, score: number, isHost = false): Player {
     connected: true,
     hand: [{ kind: "Escape" }],
     bid: 3,
+    hasBid: true,
     tricksWon: 3,
     score,
   };

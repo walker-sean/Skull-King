@@ -9,6 +9,7 @@ function playerWith(name: string, hand: Card[], bid: number | null): Player {
     connected: true,
     hand,
     bid,
+    hasBid: bid !== null,
     tricksWon: 0,
     score: 0,
   };
@@ -39,7 +40,57 @@ function roomWithPendingReveal(): RoomState {
   };
 }
 
+function roomWithBids(aliceBid: number | null, bobBid: number | null): RoomState {
+  return {
+    roomCode: "ABCD",
+    status: "Active",
+    players: [
+      playerWith("Alice", [{ kind: "Escape" }], aliceBid),
+      playerWith("Bob", [{ kind: "Escape" }], bobBid),
+    ],
+    scoringMode: "Traditional",
+    currentRound: 1,
+    currentTrick: [],
+    trickLeader: "Alice",
+    alliances: [],
+    remainingDeck: [],
+    pendingPirateAbility: null,
+    pirateBets: [],
+    cardBonuses: [],
+    roundScores: [],
+    pendingReveal: null,
+  };
+}
+
 describe("redactRoomStateFor", () => {
+  it("hides another Player's Bid value but still shows hasBid before every Bid is in", () => {
+    const state = roomWithBids(2, null);
+
+    const redacted = redactRoomStateFor(state, "Bob");
+
+    const alice = redacted.players.find((p) => p.name === "Alice");
+    expect(alice?.bid).toBeNull();
+    expect(alice?.hasBid).toBe(true);
+  });
+
+  it("reveals every Player's Bid value the moment all Bids are in", () => {
+    const state = roomWithBids(2, 1);
+
+    const redacted = redactRoomStateFor(state, "Bob");
+
+    const alice = redacted.players.find((p) => p.name === "Alice");
+    expect(alice?.bid).toBe(2);
+    expect(alice?.hasBid).toBe(true);
+  });
+
+  it("always shows the viewer their own Bid value", () => {
+    const state = roomWithBids(2, null);
+
+    const redacted = redactRoomStateFor(state, "Alice");
+
+    expect(redacted.players.find((p) => p.name === "Alice")?.bid).toBe(2);
+  });
+
   it("shows pendingReveal to the Player it belongs to", () => {
     const state = roomWithPendingReveal();
 

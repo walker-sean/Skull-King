@@ -49,7 +49,7 @@ export function submitBid(
 
   const players = state.players.map((candidate) =>
     candidate.name === player.name
-      ? { ...candidate, bid: command.bid }
+      ? { ...candidate, bid: command.bid, hasBid: true }
       : candidate,
   );
 

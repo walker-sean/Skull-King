@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import type { RoomState, ScoringMode } from "@skull-king/shared";
 import type { SocketClient } from "./socketClient.js";
+import { BiddingScreen } from "./BiddingScreen.js";
 import { HomeScreen } from "./HomeScreen.js";
 import { LobbyScreen } from "./LobbyScreen.js";
 import { REJECTION_MESSAGES } from "./rejectionMessages.js";
+import { selectBiddingView } from "./viewModel/biddingViewModel.js";
 import { selectLobbyView } from "./viewModel/lobbyViewModel.js";
 
 export interface AppProps {
@@ -54,6 +56,27 @@ export function App({ socketClient }: AppProps) {
     } else {
       setError(REJECTION_MESSAGES[response.event.reason]);
     }
+  }
+
+  async function handleSubmitBid(bid: number) {
+    if (!roomState) return;
+    setError(null);
+    const response = await socketClient.submitBid(roomState.roomCode, bid);
+    if (response.ok) {
+      setRoomState(response.state);
+    } else {
+      setError(REJECTION_MESSAGES[response.event.reason]);
+    }
+  }
+
+  if (roomState && localPlayerName && roomState.status === "Active") {
+    return (
+      <BiddingScreen
+        view={selectBiddingView(roomState, localPlayerName)}
+        error={error}
+        onSubmitBid={handleSubmitBid}
+      />
+    );
   }
 
   if (roomState && localPlayerName) {

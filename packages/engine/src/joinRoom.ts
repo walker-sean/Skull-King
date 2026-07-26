@@ -67,6 +67,7 @@ export function joinRoom(
             connected: true,
             hand: [],
             bid: null,
+            hasBid: false,
             tricksWon: 0,
             score: 0,
           },

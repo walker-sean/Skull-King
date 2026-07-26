@@ -42,6 +42,7 @@ export function advanceRound(
     ...player,
     hand: hands.get(player.name) ?? [],
     bid: null,
+    hasBid: false,
     tricksWon: 0,
   }));
   const trickLeader = playerNames[(nextRound - 1) % playerNames.length] ?? null;

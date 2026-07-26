@@ -17,6 +17,7 @@ function playersWithHands(handSize: number, count: number): Player[] {
     connected: true,
     hand: handOf(handSize),
     bid: null,
+    hasBid: false,
     tricksWon: 0,
     score: 0,
   }));

@@ -43,6 +43,7 @@ const lobbyState: RoomState = {
       connected: true,
       hand: [],
       bid: null,
+      hasBid: false,
       tricksWon: 0,
       score: 0,
     },
@@ -100,6 +101,7 @@ describe("App", () => {
           connected: true,
           hand: [],
           bid: null,
+          hasBid: false,
           tricksWon: 0,
           score: 0,
         },
@@ -170,6 +172,7 @@ describe("App", () => {
           connected: true,
           hand: [],
           bid: null,
+          hasBid: false,
           tricksWon: 0,
           score: 0,
         },
@@ -209,6 +212,7 @@ describe("App", () => {
           connected: true,
           hand: [],
           bid: null,
+          hasBid: false,
           tricksWon: 0,
           score: 0,
         },
@@ -218,6 +222,7 @@ describe("App", () => {
           connected: true,
           hand: [],
           bid: null,
+          hasBid: false,
           tricksWon: 0,
           score: 0,
         },
@@ -227,6 +232,11 @@ describe("App", () => {
       ...threePlayerState,
       status: "Active",
       scoringMode: "Rascal",
+      currentRound: 1,
+      players: threePlayerState.players.map((player) => ({
+        ...player,
+        hand: [{ kind: "Escape" }],
+      })),
     };
     const socketClient = createMockSocketClient({
       createRoom: vi
@@ -247,8 +257,7 @@ describe("App", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /start game/i }));
 
-    expect(await screen.findByText("Active")).toBeInTheDocument();
-    expect(screen.getByText("Scoring Mode: Rascal")).toBeInTheDocument();
+    expect(await screen.findByText(/round 1/i)).toBeInTheDocument();
     expect(socketClient.startGame).toHaveBeenCalledWith("ABCD", "Rascal");
   });
 
@@ -263,6 +272,7 @@ describe("App", () => {
           connected: true,
           hand: [],
           bid: null,
+          hasBid: false,
           tricksWon: 0,
           score: 0,
         },
@@ -272,6 +282,7 @@ describe("App", () => {
           connected: true,
           hand: [],
           bid: null,
+          hasBid: false,
           tricksWon: 0,
           score: 0,
         },
@@ -304,5 +315,157 @@ describe("App", () => {
       await screen.findByText(/this room has already started/i),
     ).toBeInTheDocument();
     expect(screen.getByText("Lobby")).toBeInTheDocument();
+  });
+
+  const biddingAlice = {
+    name: "Alice",
+    isHost: true,
+    connected: true,
+    hand: [{ kind: "Escape" }, { kind: "Escape" }, { kind: "Escape" }],
+    bid: null,
+    hasBid: false,
+    tricksWon: 0,
+    score: 0,
+  } as const satisfies RoomState["players"][number];
+  const biddingBob = {
+    name: "Bob",
+    isHost: false,
+    connected: true,
+    hand: [],
+    bid: null,
+    hasBid: false,
+    tricksWon: 0,
+    score: 0,
+  } as const satisfies RoomState["players"][number];
+
+  const biddingState: RoomState = {
+    roomCode: "ABCD",
+    status: "Active",
+    players: [biddingAlice, biddingBob],
+    scoringMode: "Traditional",
+    currentRound: 3,
+    currentTrick: [],
+    trickLeader: "Alice",
+    alliances: [],
+    remainingDeck: [],
+    pendingPirateAbility: null,
+    pirateBets: [],
+    cardBonuses: [],
+    roundScores: [],
+    pendingReveal: null,
+  };
+
+  it("submits a Bid and reflects it once the server confirms it", async () => {
+    const afterBid: RoomState = {
+      ...biddingState,
+      players: [{ ...biddingAlice, bid: 2, hasBid: true }, biddingBob],
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: biddingState }),
+      submitBid: vi.fn().mockResolvedValue({ ok: true, state: afterBid }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 3/i);
+
+    fireEvent.change(screen.getByLabelText(/^bid$/i), {
+      target: { value: "2" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /submit bid/i }));
+
+    expect(socketClient.submitBid).toHaveBeenCalledWith("ABCD", 2);
+    expect(await screen.findByText("Your Bid: 2")).toBeInTheDocument();
+  });
+
+  it("does not let a Player resubmit once their Bid is recorded", async () => {
+    const alreadyBid: RoomState = {
+      ...biddingState,
+      players: [{ ...biddingAlice, bid: 3, hasBid: true }, biddingBob],
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: alreadyBid }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+
+    expect(await screen.findByText("Your Bid: 3")).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^bid$/i)).not.toBeInTheDocument();
+  });
+
+  it("shows other Players as having bid without revealing values, then reveals every Bid once everyone's in", async () => {
+    const partiallyBid: RoomState = {
+      ...biddingState,
+      players: [
+        { ...biddingAlice, hasBid: true, bid: null },
+        { ...biddingBob, hasBid: false, bid: null },
+      ],
+    };
+    const socketClient = createMockSocketClient({
+      joinRoom: vi.fn().mockResolvedValue({ ok: true, state: partiallyBid }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/room code/i), {
+      target: { value: "ABCD" },
+    });
+    fireEvent.change(screen.getByLabelText(/display name/i), {
+      target: { value: "Bob" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /join room/i }));
+
+    expect(await screen.findByText(/has bid/i)).toBeInTheDocument();
+    expect(screen.queryByText("2")).not.toBeInTheDocument();
+
+    const revealed: RoomState = {
+      ...partiallyBid,
+      players: [
+        { ...biddingAlice, bid: 2, hasBid: true },
+        { ...biddingBob, bid: 1, hasBid: true },
+      ],
+    };
+    (
+      socketClient as unknown as { emitRoomState: (s: RoomState) => void }
+    ).emitRoomState(revealed);
+
+    expect(await screen.findByText("2")).toBeInTheDocument();
+    expect(await screen.findByText("1")).toBeInTheDocument();
+  });
+
+  it("shows the rejection message when a Bid submission is rejected", async () => {
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: biddingState }),
+      submitBid: vi.fn().mockResolvedValue({
+        ok: false,
+        event: {
+          type: "SubmitBidRejected",
+          roomCode: "ABCD",
+          reason: "InvalidBid",
+        },
+      }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 3/i);
+
+    fireEvent.change(screen.getByLabelText(/^bid$/i), {
+      target: { value: "1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /submit bid/i }));
+
+    expect(
+      await screen.findByText(/that bid isn't valid/i),
+    ).toBeInTheDocument();
   });
 });

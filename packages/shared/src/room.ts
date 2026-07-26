@@ -16,6 +16,13 @@ export interface Player {
   hand: Card[];
   /** This Player's private Bid for the current Round; null until they've submitted one. */
   bid: number | null;
+  /**
+   * Whether this Player has submitted a Bid for the current Round — always true/false on
+   * the wire even before the reveal, unlike `bid` itself (which the server nulls out for
+   * every other Player until `areAllBidsSubmitted`); the Bidding screen renders this to show
+   * "has bid" / "hasn't bid yet" without leaking values (see CONTEXT.md's Bid glossary entry).
+   */
+  hasBid: boolean;
   /** Tricks this Player has taken so far in the current Round; reset to 0 at the start of each Round. */
   tricksWon: number;
   /** This Player's running score total across every Round scored so far this Game. */

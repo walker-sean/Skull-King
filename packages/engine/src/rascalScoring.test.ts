@@ -19,6 +19,7 @@ function playerWith(
     connected: true,
     hand: [],
     bid,
+    hasBid: bid !== null,
     tricksWon,
     score,
   };

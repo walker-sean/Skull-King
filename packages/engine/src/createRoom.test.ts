@@ -19,6 +19,7 @@ describe("createRoom", () => {
           connected: true,
           hand: [],
           bid: null,
+          hasBid: false,
           tricksWon: 0,
           score: 0,
         },

@@ -19,6 +19,7 @@ function playerWith(name: string, hand: Card[], isHost = false): Player {
     connected: true,
     hand,
     bid: 0,
+    hasBid: true,
     tricksWon: 0,
     score: 0,
   };
@@ -257,7 +258,11 @@ describe("playCard", () => {
 
   it("rejects a play before every Player has submitted a Bid", () => {
     const players = [
-      { ...playerWith("Alice", [suited("Parrot", 5)], true), bid: null },
+      {
+        ...playerWith("Alice", [suited("Parrot", 5)], true),
+        bid: null,
+        hasBid: false,
+      },
       playerWith("Bob", [suited("Parrot", 3)]),
     ];
     const room = activeRoom(players);
@@ -1036,6 +1041,7 @@ describe("playCard", () => {
           ...player,
           hand: [suited("Parrot", player.name === "Alice" ? 5 : 2)],
           bid: player.name === "Alice" ? 1 : 0,
+          hasBid: true,
         })),
       };
       const afterBob2 = playCard(roundTwoRoom, {

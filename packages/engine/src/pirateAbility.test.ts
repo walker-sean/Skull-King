@@ -12,7 +12,16 @@ function playerWith(
   bid: number | null,
   isHost = false,
 ): Player {
-  return { name, isHost, connected: true, hand, bid, tricksWon: 0, score: 0 };
+  return {
+    name,
+    isHost,
+    connected: true,
+    hand,
+    bid,
+    hasBid: bid !== null,
+    tricksWon: 0,
+    score: 0,
+  };
 }
 
 function roomWithPendingAbility(
