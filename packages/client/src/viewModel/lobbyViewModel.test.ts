@@ -33,6 +33,7 @@ const roomState: RoomState = {
   remainingDeck: [],
   pendingPirateAbility: null,
   pirateBets: [],
+  cardBonuses: [],
 };
 
 describe("selectLobbyView", () => {

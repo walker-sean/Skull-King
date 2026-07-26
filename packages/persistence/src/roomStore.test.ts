@@ -36,6 +36,7 @@ const lobbyRoom: RoomState = {
   remainingDeck: [],
   pendingPirateAbility: null,
   pirateBets: [],
+  cardBonuses: [],
 };
 
 describe("RoomStore", () => {
@@ -100,6 +101,7 @@ describe("RoomStore", () => {
       remainingDeck: [],
       pendingPirateAbility: null,
       pirateBets: [],
+      cardBonuses: [],
     });
 
     expect(store.listNonCompletedRoomCodes()).toEqual(["ABCD"]);
@@ -137,6 +139,7 @@ describe("RoomStore", () => {
       remainingDeck: [],
       pendingPirateAbility: null,
       pirateBets: [],
+      cardBonuses: [],
     };
     store.saveRoom(completedRoom);
 

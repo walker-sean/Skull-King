@@ -34,6 +34,7 @@ function activeRoom(
     remainingDeck: [],
     pendingPirateAbility: null,
     pirateBets: [],
+    cardBonuses: [],
   };
 }
 
@@ -933,6 +934,7 @@ describe("playCard", () => {
         round: 1,
         scores: [
           {
+            scoringMode: "Traditional",
             playerName: "Alice",
             bidPoints: 20,
             allianceBonus: 0,
@@ -940,6 +942,7 @@ describe("playCard", () => {
             totalScore: 20,
           },
           {
+            scoringMode: "Traditional",
             playerName: "Bob",
             bidPoints: 10,
             allianceBonus: 0,
@@ -1049,6 +1052,7 @@ describe("playCard", () => {
         round: 2,
         scores: [
           {
+            scoringMode: "Traditional",
             playerName: "Alice",
             bidPoints: 20,
             allianceBonus: 20,
@@ -1056,6 +1060,7 @@ describe("playCard", () => {
             totalScore: 40,
           },
           {
+            scoringMode: "Traditional",
             playerName: "Bob",
             bidPoints: 20,
             allianceBonus: 20,
@@ -1063,6 +1068,99 @@ describe("playCard", () => {
             totalScore: 40,
           },
         ],
+      });
+    });
+
+    describe("Rascal Scoring", () => {
+      it("scores the Round under Rascal Scoring, including a numbered-14 capture Bonus", () => {
+        const players = [
+          {
+            ...playerWith("Alice", [suited("JollyRoger", 14)], true),
+            bid: 1,
+          },
+          { ...playerWith("Bob", [suited("Parrot", 5)]), bid: 0 },
+        ];
+        const room = { ...activeRoom(players), scoringMode: "Rascal" as const };
+
+        const afterAlice = playCard(room, {
+          type: "PlayCard",
+          roomCode: "ABCD",
+          card: suited("JollyRoger", 14),
+          actorName: "Alice",
+        });
+        const final = playCard(afterAlice.state as RoomState, {
+          type: "PlayCard",
+          roomCode: "ABCD",
+          card: suited("Parrot", 5),
+          actorName: "Bob",
+        });
+
+        expect(final.events).toContainEqual({
+          type: "RoundScored",
+          roomCode: "ABCD",
+          round: 1,
+          scores: [
+            {
+              scoringMode: "Rascal",
+              playerName: "Alice",
+              outcome: "DirectHit",
+              bidPoints: 10,
+              bonusPoints: 20,
+              allianceBonus: 0,
+              betResult: 0,
+              roundPoints: 30,
+              totalScore: 30,
+            },
+            {
+              scoringMode: "Rascal",
+              playerName: "Bob",
+              outcome: "DirectHit",
+              bidPoints: 10,
+              bonusPoints: 0,
+              allianceBonus: 0,
+              betResult: 0,
+              roundPoints: 10,
+              totalScore: 10,
+            },
+          ],
+        });
+        expect(
+          final.state?.cardBonuses.find((b) => b.playerName === "Alice"),
+        ).toEqual({ round: 1, playerName: "Alice", points: 20 });
+      });
+
+      it("resolves a pending Rascal of Roatan bet when the Round is scored", () => {
+        const players = [
+          { ...playerWith("Alice", [suited("Parrot", 5)], true), bid: 1 },
+          { ...playerWith("Bob", [suited("Parrot", 2)]), bid: 0 },
+        ];
+        const room = {
+          ...activeRoom(players),
+          scoringMode: "Rascal" as const,
+          pirateBets: [{ round: 1, playerName: "Alice", amount: 20 as const }],
+        };
+
+        const afterAlice = playCard(room, {
+          type: "PlayCard",
+          roomCode: "ABCD",
+          card: suited("Parrot", 5),
+          actorName: "Alice",
+        });
+        const final = playCard(afterAlice.state as RoomState, {
+          type: "PlayCard",
+          roomCode: "ABCD",
+          card: suited("Parrot", 2),
+          actorName: "Bob",
+        });
+
+        expect(final.events).toContainEqual(
+          expect.objectContaining({
+            type: "RoundScored",
+            scores: expect.arrayContaining([
+              expect.objectContaining({ playerName: "Alice", betResult: 20 }),
+            ]),
+          }),
+        );
       });
     });
   });

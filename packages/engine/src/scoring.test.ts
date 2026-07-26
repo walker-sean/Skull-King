@@ -25,6 +25,7 @@ describe("scoreRound", () => {
 
     expect(scores).toEqual([
       {
+        scoringMode: "Traditional",
         playerName: "Calvin",
         bidPoints: 60,
         allianceBonus: 0,

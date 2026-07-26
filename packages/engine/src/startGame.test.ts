@@ -27,6 +27,7 @@ function lobbyWith(count: number): RoomState {
     remainingDeck: [],
     pendingPirateAbility: null,
     pirateBets: [],
+    cardBonuses: [],
   };
 }
 

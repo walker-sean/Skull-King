@@ -55,6 +55,7 @@ const lobbyState: RoomState = {
   remainingDeck: [],
   pendingPirateAbility: null,
   pirateBets: [],
+  cardBonuses: [],
 };
 
 describe("App", () => {
