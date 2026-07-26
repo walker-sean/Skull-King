@@ -89,7 +89,15 @@ describe("createRealtimeServer", () => {
     if (!response.ok) throw new Error("expected success");
     expect(response.state.status).toBe("Lobby");
     expect(response.state.players).toEqual([
-      { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
+      {
+        name: "Alice",
+        isHost: true,
+        connected: true,
+        hand: [],
+        bid: null,
+        tricksWon: 0,
+        score: 0,
+      },
     ]);
     expect(response.state.roomCode).toHaveLength(4);
   });
@@ -115,8 +123,24 @@ describe("createRealtimeServer", () => {
     expect(joinResponse.ok).toBe(true);
     if (!joinResponse.ok) throw new Error("expected success");
     expect(joinResponse.state.players).toEqual([
-      { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
-      { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
+      {
+        name: "Alice",
+        isHost: true,
+        connected: true,
+        hand: [],
+        bid: null,
+        tricksWon: 0,
+        score: 0,
+      },
+      {
+        name: "Bob",
+        isHost: false,
+        connected: true,
+        hand: [],
+        bid: null,
+        tricksWon: 0,
+        score: 0,
+      },
     ]);
 
     const broadcastState = await broadcastReceived;
@@ -473,8 +497,9 @@ describe("createRealtimeServer", () => {
     const aliceHand = aliceResponse.state.players.find(
       (p) => p.name === "Alice",
     )?.hand;
-    const bobHand = bobResponse.state.players.find((p) => p.name === "Bob")
-      ?.hand;
+    const bobHand = bobResponse.state.players.find(
+      (p) => p.name === "Bob",
+    )?.hand;
     const carolHand = carolResponse.state.players.find(
       (p) => p.name === "Carol",
     )?.hand;

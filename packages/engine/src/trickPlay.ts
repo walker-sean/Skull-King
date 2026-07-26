@@ -2,6 +2,7 @@ import type {
   Card,
   DomainEvent,
   EngineResult,
+  Player,
   PlayCardCommand,
   PlayCardRejectedReason,
   RoomState,
@@ -10,6 +11,7 @@ import type {
   TrickVoidingCard,
 } from "@skull-king/shared";
 import { areAllBidsSubmitted } from "./bidding.js";
+import { scoreRound } from "./scoring.js";
 
 const TRUMP_SUIT: Suit = "JollyRoger";
 
@@ -225,6 +227,32 @@ function resolveTrick(trick: readonly TrickPlay[]): TrickResolution {
   return { outcome: "Won", winnerName: capturePlayerName(trick) };
 }
 
+/**
+ * Once every Player's hand is empty, the Round in progress is over: scores it under the
+ * Game's Scoring Mode (see CONTEXT.md's Scoring Mode entry) and folds the result into each
+ * Player's running total, raising RoundScored alongside whatever Trick-level events already
+ * fired. Otherwise the Round continues unchanged — no scoring happens mid-Round.
+ */
+function withRoundScoring(
+  round: number,
+  alliances: RoomState["alliances"],
+  roomCode: string,
+  players: Player[],
+  events: DomainEvent[],
+): Player[] {
+  if (!players.every((player) => player.hand.length === 0)) {
+    return players;
+  }
+
+  const { players: scoredPlayers, scores } = scoreRound(
+    round,
+    players,
+    alliances,
+  );
+  events.push({ type: "RoundScored", roomCode, round, scores });
+  return scoredPlayers;
+}
+
 export function playCard(
   state: RoomState | null,
   command: PlayCardCommand,
@@ -324,10 +352,17 @@ export function playCard(
         voidedBy: resolution.voidedBy,
         nextLeaderName: resolution.nextLeaderName,
       });
+      const finalPlayers = withRoundScoring(
+        state.currentRound ?? 0,
+        state.alliances,
+        command.roomCode,
+        players,
+        events,
+      );
       return {
         state: {
           ...state,
-          players,
+          players: finalPlayers,
           currentTrick: [],
           trickLeader: resolution.nextLeaderName,
           pendingPirateAbility: null,
@@ -338,6 +373,14 @@ export function playCard(
 
     const winnerName = resolution.winnerName;
     events.push({ type: "TrickWon", roomCode: command.roomCode, winnerName });
+
+    // The Trick's winner takes it (see CONTEXT.md's Trick entry) — tallied per Player so
+    // Traditional/Rascal Scoring can compare Tricks taken against Bid once the Round ends.
+    const playersAfterTrick = players.map((candidate) =>
+      candidate.name === winnerName
+        ? { ...candidate, tricksWon: candidate.tricksWon + 1 }
+        : candidate,
+    );
 
     // Loot plays as an Escape but forms an Alliance with the Trick's winner, unless the
     // Loot's own Player is the one who won (see CONTEXT.md's Loot and Alliance entries).
@@ -376,10 +419,18 @@ export function playCard(
       });
     }
 
+    const finalPlayers = withRoundScoring(
+      state.currentRound ?? 0,
+      [...state.alliances, ...newAlliances],
+      command.roomCode,
+      playersAfterTrick,
+      events,
+    );
+
     return {
       state: {
         ...state,
-        players,
+        players: finalPlayers,
         currentTrick: [],
         trickLeader: winnerName,
         alliances: [...state.alliances, ...newAlliances],

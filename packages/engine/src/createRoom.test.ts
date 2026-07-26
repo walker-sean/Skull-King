@@ -13,7 +13,15 @@ describe("createRoom", () => {
       roomCode: "ABCD",
       status: "Lobby",
       players: [
-        { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
+        {
+          name: "Alice",
+          isHost: true,
+          connected: true,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
       ],
       scoringMode: null,
       currentRound: null,

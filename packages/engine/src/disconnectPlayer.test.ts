@@ -7,13 +7,23 @@ function activeRoom(): RoomState {
     roomCode: "ABCD",
     status: "Active",
     players: [
-      { name: "Alice", isHost: true, connected: true, hand: [], bid: 1 },
+      {
+        name: "Alice",
+        isHost: true,
+        connected: true,
+        hand: [],
+        bid: 1,
+        tricksWon: 0,
+        score: 0,
+      },
       {
         name: "Bob",
         isHost: false,
         connected: true,
         hand: [{ kind: "Suited", suit: "Parrot", rank: 5 }],
         bid: null,
+        tricksWon: 0,
+        score: 0,
       },
     ],
     scoringMode: "Traditional",
@@ -57,8 +67,24 @@ describe("disconnectPlayer", () => {
       ...activeRoom(),
       status: "Paused",
       players: [
-        { name: "Alice", isHost: true, connected: false, hand: [], bid: 1 },
-        { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
+        {
+          name: "Alice",
+          isHost: true,
+          connected: false,
+          hand: [],
+          bid: 1,
+          tricksWon: 0,
+          score: 0,
+        },
+        {
+          name: "Bob",
+          isHost: false,
+          connected: true,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
       ],
     };
     const result = disconnectPlayer(room, {
@@ -78,7 +104,15 @@ describe("disconnectPlayer", () => {
       roomCode: "ABCD",
       status: "Lobby",
       players: [
-        { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
+        {
+          name: "Alice",
+          isHost: true,
+          connected: true,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
       ],
       scoringMode: null,
       currentRound: null,
@@ -127,8 +161,24 @@ describe("disconnectPlayer", () => {
       ...activeRoom(),
       status: "Paused",
       players: [
-        { name: "Alice", isHost: true, connected: true, hand: [], bid: 1 },
-        { name: "Bob", isHost: false, connected: false, hand: [], bid: null },
+        {
+          name: "Alice",
+          isHost: true,
+          connected: true,
+          hand: [],
+          bid: 1,
+          tricksWon: 0,
+          score: 0,
+        },
+        {
+          name: "Bob",
+          isHost: false,
+          connected: false,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
       ],
     };
     const result = disconnectPlayer(room, {

@@ -16,7 +16,15 @@ export function createRoom(command: CreateRoomCommand): EngineResult {
       roomCode: command.roomCode,
       status: "Lobby",
       players: [
-        { name: hostName, isHost: true, connected: true, hand: [], bid: null },
+        {
+          name: hostName,
+          isHost: true,
+          connected: true,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
       ],
       scoringMode: null,
       currentRound: null,

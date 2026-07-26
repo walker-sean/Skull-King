@@ -7,7 +7,15 @@ function suited(suit: Suit, rank: number): Card {
 }
 
 function playerWith(name: string, hand: Card[], isHost = false): Player {
-  return { name, isHost, connected: true, hand, bid: 0 };
+  return {
+    name,
+    isHost,
+    connected: true,
+    hand,
+    bid: 0,
+    tricksWon: 0,
+    score: 0,
+  };
 }
 
 function activeRoom(
@@ -894,6 +902,167 @@ describe("playCard", () => {
           nextLeaderName: "Dave",
         });
         expect(room.trickLeader).toBe("Dave");
+      });
+    });
+  });
+
+  describe("Round scoring", () => {
+    it("scores the Round and raises RoundScored once every Player's hand is empty", () => {
+      const players = [
+        { ...playerWith("Alice", [suited("Parrot", 5)], true), bid: 1 },
+        { ...playerWith("Bob", [suited("Parrot", 2)]), bid: 0 },
+      ];
+      const room = activeRoom(players);
+
+      const result = playCard(room, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 5),
+        actorName: "Alice",
+      });
+      const final = playCard(result.state as RoomState, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 2),
+        actorName: "Bob",
+      });
+
+      expect(final.events).toContainEqual({
+        type: "RoundScored",
+        roomCode: "ABCD",
+        round: 1,
+        scores: [
+          {
+            playerName: "Alice",
+            bidPoints: 20,
+            allianceBonus: 0,
+            roundPoints: 20,
+            totalScore: 20,
+          },
+          {
+            playerName: "Bob",
+            bidPoints: 10,
+            allianceBonus: 0,
+            roundPoints: 10,
+            totalScore: 10,
+          },
+        ],
+      });
+      expect(final.state?.players.find((p) => p.name === "Alice")?.score).toBe(
+        20,
+      );
+      expect(final.state?.players.find((p) => p.name === "Bob")?.score).toBe(
+        10,
+      );
+    });
+
+    it("does not raise RoundScored or touch scores while the Round is still in progress", () => {
+      const players = [
+        {
+          ...playerWith(
+            "Alice",
+            [suited("Parrot", 5), suited("Parrot", 1)],
+            true,
+          ),
+          bid: 2,
+        },
+        {
+          ...playerWith("Bob", [suited("Parrot", 2), suited("Parrot", 9)]),
+          bid: 0,
+        },
+      ];
+      const room = activeRoom(players);
+
+      const result = playCard(room, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 5),
+        actorName: "Alice",
+      });
+      const afterFirstTrick = playCard(result.state as RoomState, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 2),
+        actorName: "Bob",
+      });
+
+      expect(afterFirstTrick.events).not.toContainEqual(
+        expect.objectContaining({ type: "RoundScored" }),
+      );
+      expect(afterFirstTrick.state?.players.every((p) => p.score === 0)).toBe(
+        true,
+      );
+    });
+
+    it("pays the Alliance bonus into RoundScored once both Allied Players hit their Bid", () => {
+      const loot: Card = { kind: "Loot" };
+      const players = [
+        {
+          ...playerWith("Alice", [loot, suited("Parrot", 14)], true),
+          bid: 1,
+        },
+        {
+          ...playerWith("Bob", [suited("Parrot", 5), suited("Parrot", 3)]),
+          bid: 1,
+        },
+      ];
+      const room = activeRoom(players);
+
+      // Trick 1: Alice's Loot loses to Bob's Suited card, forming an Alliance (Alice/Bob).
+      const afterAlice1 = playCard(room, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: loot,
+        actorName: "Alice",
+      });
+      const afterTrick1 = playCard(afterAlice1.state as RoomState, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 5),
+        actorName: "Bob",
+      });
+      expect(afterTrick1.events).toContainEqual({
+        type: "AllianceFormed",
+        roomCode: "ABCD",
+        lootPlayerName: "Alice",
+        winnerName: "Bob",
+      });
+
+      // Trick 2: Bob (who won Trick 1) leads; Alice's high card wins, finishing the Round
+      // with both Players at their Bid.
+      const afterBob2 = playCard(afterTrick1.state as RoomState, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 3),
+        actorName: "Bob",
+      });
+      const final = playCard(afterBob2.state as RoomState, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 14),
+        actorName: "Alice",
+      });
+
+      expect(final.events).toContainEqual({
+        type: "RoundScored",
+        roomCode: "ABCD",
+        round: 2,
+        scores: [
+          {
+            playerName: "Alice",
+            bidPoints: 20,
+            allianceBonus: 20,
+            roundPoints: 40,
+            totalScore: 40,
+          },
+          {
+            playerName: "Bob",
+            bidPoints: 20,
+            allianceBonus: 20,
+            roundPoints: 40,
+            totalScore: 40,
+          },
+        ],
       });
     });
   });

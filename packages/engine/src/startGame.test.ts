@@ -9,6 +9,8 @@ function playersNamed(count: number): Player[] {
     connected: true,
     hand: [],
     bid: null,
+    tricksWon: 0,
+    score: 0,
   }));
 }
 

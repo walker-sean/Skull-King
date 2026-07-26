@@ -221,6 +221,29 @@ export interface InvokePirateAbilityRejectedEvent {
   reason: InvokePirateAbilityRejectedReason;
 }
 
+/** One Player's points breakdown for a just-scored Round (see the Scoresheet in docs/rules/rulebook.md). */
+export interface RoundScore {
+  playerName: string;
+  bidPoints: number;
+  allianceBonus: number;
+  /** bidPoints + allianceBonus. */
+  roundPoints: number;
+  /** This Player's running score total after this Round, including every prior Round. */
+  totalScore: number;
+}
+
+/**
+ * Raised once every Player's hand is empty for the Round in progress: the Round is over
+ * and scored per the Game's Scoring Mode (see CONTEXT.md's Scoring Mode entry), with
+ * running totals now visible to all Players.
+ */
+export interface RoundScoredEvent {
+  type: "RoundScored";
+  roomCode: string;
+  round: number;
+  scores: RoundScore[];
+}
+
 export type DomainEvent =
   | RoomCreatedEvent
   | RoomCreateRejectedEvent
@@ -245,7 +268,8 @@ export type DomainEvent =
   | CardsExchangedEvent
   | BetPlacedEvent
   | UndealtCardsRevealedEvent
-  | InvokePirateAbilityRejectedEvent;
+  | InvokePirateAbilityRejectedEvent
+  | RoundScoredEvent;
 
 export type RejectionEvent =
   | RoomCreateRejectedEvent

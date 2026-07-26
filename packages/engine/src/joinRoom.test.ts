@@ -7,7 +7,15 @@ function lobbyWithHost(): RoomState {
     roomCode: "ABCD",
     status: "Lobby",
     players: [
-      { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
+      {
+        name: "Alice",
+        isHost: true,
+        connected: true,
+        hand: [],
+        bid: null,
+        tricksWon: 0,
+        score: 0,
+      },
     ],
     scoringMode: null,
     currentRound: null,
@@ -29,8 +37,24 @@ describe("joinRoom", () => {
     });
 
     expect(result.state?.players).toEqual([
-      { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
-      { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
+      {
+        name: "Alice",
+        isHost: true,
+        connected: true,
+        hand: [],
+        bid: null,
+        tricksWon: 0,
+        score: 0,
+      },
+      {
+        name: "Bob",
+        isHost: false,
+        connected: true,
+        hand: [],
+        bid: null,
+        tricksWon: 0,
+        score: 0,
+      },
     ]);
     expect(result.events).toEqual([
       { type: "PlayerJoined", roomCode: "ABCD", playerName: "Bob" },
@@ -107,7 +131,15 @@ describe("joinRoom", () => {
       ...lobbyWithHost(),
       status: "Completed",
       players: [
-        { name: "Alice", isHost: true, connected: false, hand: [], bid: null },
+        {
+          name: "Alice",
+          isHost: true,
+          connected: false,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
       ],
     };
     const result = joinRoom(room, {
@@ -127,13 +159,23 @@ describe("joinRoom", () => {
       roomCode: "ABCD",
       status: "Active",
       players: [
-        { name: "Alice", isHost: true, connected: true, hand: [], bid: 1 },
+        {
+          name: "Alice",
+          isHost: true,
+          connected: true,
+          hand: [],
+          bid: 1,
+          tricksWon: 0,
+          score: 0,
+        },
         {
           name: "Bob",
           isHost: false,
           connected: false,
           hand: [{ kind: "Suited", suit: "Parrot", rank: 5 }],
           bid: null,
+          tricksWon: 0,
+          score: 0,
         },
       ],
       scoringMode: "Traditional",
@@ -162,6 +204,8 @@ describe("joinRoom", () => {
           connected: true,
           hand: [{ kind: "Suited", suit: "Parrot", rank: 5 }],
           bid: null,
+          tricksWon: 0,
+          score: 0,
         },
       ],
     });
@@ -175,8 +219,24 @@ describe("joinRoom", () => {
       roomCode: "ABCD",
       status: "Paused",
       players: [
-        { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
-        { name: "Bob", isHost: false, connected: false, hand: [], bid: null },
+        {
+          name: "Alice",
+          isHost: true,
+          connected: true,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
+        {
+          name: "Bob",
+          isHost: false,
+          connected: false,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
       ],
       scoringMode: "Traditional",
       currentRound: 1,
@@ -206,8 +266,24 @@ describe("joinRoom", () => {
       roomCode: "ABCD",
       status: "Paused",
       players: [
-        { name: "Alice", isHost: true, connected: false, hand: [], bid: null },
-        { name: "Bob", isHost: false, connected: false, hand: [], bid: null },
+        {
+          name: "Alice",
+          isHost: true,
+          connected: false,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
+        {
+          name: "Bob",
+          isHost: false,
+          connected: false,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
       ],
       scoringMode: "Traditional",
       currentRound: 1,
@@ -250,7 +326,15 @@ describe("joinRoom", () => {
       roomCode: "ABCD",
       status: "Paused",
       players: [
-        { name: "Alice", isHost: true, connected: false, hand: [], bid: null },
+        {
+          name: "Alice",
+          isHost: true,
+          connected: false,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
       ],
       scoringMode: "Traditional",
       currentRound: 1,

@@ -37,7 +37,15 @@ const lobbyState: RoomState = {
   roomCode: "ABCD",
   status: "Lobby",
   players: [
-    { name: "Alice", isHost: true, connected: true, hand: [], bid: null },
+    {
+      name: "Alice",
+      isHost: true,
+      connected: true,
+      hand: [],
+      bid: null,
+      tricksWon: 0,
+      score: 0,
+    },
   ],
   scoringMode: null,
   currentRound: null,
@@ -83,7 +91,15 @@ describe("App", () => {
       ...lobbyState,
       players: [
         ...lobbyState.players,
-        { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
+        {
+          name: "Bob",
+          isHost: false,
+          connected: true,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
       ],
     };
     const socketClient = createMockSocketClient({
@@ -145,7 +161,15 @@ describe("App", () => {
       ...lobbyState,
       players: [
         ...lobbyState.players,
-        { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
+        {
+          name: "Bob",
+          isHost: false,
+          connected: true,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
       ],
     };
     (
@@ -176,8 +200,24 @@ describe("App", () => {
       ...lobbyState,
       players: [
         ...lobbyState.players,
-        { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
-        { name: "Carol", isHost: false, connected: true, hand: [], bid: null },
+        {
+          name: "Bob",
+          isHost: false,
+          connected: true,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
+        {
+          name: "Carol",
+          isHost: false,
+          connected: true,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
       ],
     };
     const startedState: RoomState = {
@@ -214,8 +254,24 @@ describe("App", () => {
       ...lobbyState,
       players: [
         ...lobbyState.players,
-        { name: "Bob", isHost: false, connected: true, hand: [], bid: null },
-        { name: "Carol", isHost: false, connected: true, hand: [], bid: null },
+        {
+          name: "Bob",
+          isHost: false,
+          connected: true,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
+        {
+          name: "Carol",
+          isHost: false,
+          connected: true,
+          hand: [],
+          bid: null,
+          tricksWon: 0,
+          score: 0,
+        },
       ],
     };
     const socketClient = createMockSocketClient({

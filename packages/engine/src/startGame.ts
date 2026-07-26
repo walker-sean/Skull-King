@@ -53,6 +53,7 @@ export function startGame(
   const players = state.players.map((player) => ({
     ...player,
     hand: hands.get(player.name) ?? [],
+    tricksWon: 0,
   }));
 
   return {

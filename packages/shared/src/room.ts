@@ -15,6 +15,10 @@ export interface Player {
   hand: Card[];
   /** This Player's private Bid for the current Round; null until they've submitted one. */
   bid: number | null;
+  /** Tricks this Player has taken so far in the current Round; reset to 0 at the start of each Round. */
+  tricksWon: number;
+  /** This Player's running score total across every Round scored so far this Game. */
+  score: number;
 }
 
 /** One Player's card played into the current Trick, in the order it was played. */
