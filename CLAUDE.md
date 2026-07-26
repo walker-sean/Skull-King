@@ -1,5 +1,9 @@
 ## Agent skills
 
+### Explicit skill invocation
+
+When the user types a fully-qualified skill command (e.g. `/mattpocock-skills:implement` or `/plugin:skill-name`), invoke it via the Skill tool using that exact name — even if it doesn't appear in the current session's ambient "available skills" listing. That listing is a truncated subset of installed skills and varies by session; a user typing the exact name is giving explicit instruction, not asking the agent to guess. Only refuse if the named skill genuinely doesn't exist in any installed plugin.
+
 ### Issue tracker
 
 Issues are tracked as GitHub Issues via the `gh` CLI. See `docs/agents/issue-tracker.md`.

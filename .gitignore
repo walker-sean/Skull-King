@@ -22,3 +22,6 @@ dist/
 *.sqlite-journal
 *.sqlite-wal
 *.sqlite-shm
+
+# Claude
+.claude/
