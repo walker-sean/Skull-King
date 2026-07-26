@@ -3,6 +3,7 @@ import type {
   Card,
   ClientToServerEvents,
   CommandResponse,
+  PirateAbilityEffect,
   RoomState,
   ScoringMode,
   ServerToClientEvents,
@@ -17,6 +18,10 @@ export interface SocketClient {
   ): Promise<CommandResponse>;
   submitBid(roomCode: string, bid: number): Promise<CommandResponse>;
   playCard(roomCode: string, card: Card): Promise<CommandResponse>;
+  invokePirateAbility(
+    roomCode: string,
+    effect: PirateAbilityEffect,
+  ): Promise<CommandResponse>;
   onRoomState(handler: (state: RoomState) => void): () => void;
   disconnect(): void;
 }
@@ -55,6 +60,15 @@ export function createSocketClient(url: string): SocketClient {
     playCard(roomCode: string, card: Card): Promise<CommandResponse> {
       return new Promise((resolve) => {
         socket.emit("playCard", { roomCode, card }, resolve);
+      });
+    },
+
+    invokePirateAbility(
+      roomCode: string,
+      effect: PirateAbilityEffect,
+    ): Promise<CommandResponse> {
+      return new Promise((resolve) => {
+        socket.emit("invokePirateAbility", { roomCode, effect }, resolve);
       });
     },
 

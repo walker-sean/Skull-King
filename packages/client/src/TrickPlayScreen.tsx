@@ -1,5 +1,8 @@
 import { useState } from "react";
-import type { Card } from "@skull-king/shared";
+import type { Alliance, Card, PirateAbilityEffect } from "@skull-king/shared";
+import { cardLabel } from "./cardLabel.js";
+import { PirateAbilityPanel } from "./PirateAbilityPanel.js";
+import type { PirateAbilityViewModel } from "./viewModel/pirateAbilityViewModel.js";
 import type {
   HandCardView,
   TrickPlayViewModel,
@@ -11,42 +14,29 @@ export interface TrickPlayScreenProps {
   view: TrickPlayViewModel;
   error: string | null;
   onPlayCard: (card: Card) => void;
-}
-
-function cardLabel(card: Card): string {
-  switch (card.kind) {
-    case "Suited":
-      return `${card.suit} ${card.rank}`;
-    case "Pirate":
-      return `Pirate: ${card.name}`;
-    case "Tigress":
-      return card.declaredAs ? `Tigress (${card.declaredAs})` : "Tigress";
-    case "SkullKing":
-      return "Skull King";
-    case "Mermaid":
-      return "Mermaid";
-    case "Escape":
-      return "Escape";
-    case "Loot":
-      return "Loot";
-    case "Kraken":
-      return "Kraken";
-    case "WhiteWhale":
-      return "White Whale";
-  }
+  pirateAbility: PirateAbilityViewModel | null;
+  onInvokePirateAbility: (effect: PirateAbilityEffect) => void;
+  peekedCards: Card[] | null;
+  drawnCards: Card[] | null;
+  allianceBanner: Alliance | null;
 }
 
 export function TrickPlayScreen({
   view,
   error,
   onPlayCard,
+  pirateAbility,
+  onInvokePirateAbility,
+  peekedCards,
+  drawnCards,
+  allianceBanner,
 }: TrickPlayScreenProps) {
   const [decliningTigress, setDecliningTigress] = useState<TigressCard | null>(
     null,
   );
 
   function handleCardClick(entry: HandCardView) {
-    if (!entry.legal || !view.isYourTurn) return;
+    if (!entry.legal || !view.isYourTurn || pirateAbility) return;
     if (entry.card.kind === "Tigress") {
       setDecliningTigress(entry.card);
       return;
@@ -91,12 +81,14 @@ export function TrickPlayScreen({
       </ul>
 
       <h2>Your hand</h2>
+      {/* Disabled while any Advanced Pirate Ability is pending — the server already
+          rejects PlayCard with PirateAbilityPending until it's invoked. */}
       <ul>
         {view.hand.map((entry, index) => (
           <li key={index}>
             <button
               type="button"
-              disabled={!entry.legal || !view.isYourTurn}
+              disabled={!entry.legal || !view.isYourTurn || pirateAbility !== null}
               onClick={() => handleCardClick(entry)}
             >
               {cardLabel(entry.card)}
@@ -118,6 +110,37 @@ export function TrickPlayScreen({
       )}
 
       {error && <p role="alert">{error}</p>}
+
+      {allianceBanner && (
+        <p role="status">
+          Loot Alliance formed between {allianceBanner.lootPlayerName} and{" "}
+          {allianceBanner.winnerName}!
+        </p>
+      )}
+
+      {pirateAbility && (
+        <PirateAbilityPanel
+          view={pirateAbility}
+          onInvoke={onInvokePirateAbility}
+        />
+      )}
+
+      {peekedCards && (
+        <section>
+          <h2>Undealt cards you peeked at</h2>
+          <ul>
+            {peekedCards.map((card, index) => (
+              <li key={index}>{cardLabel(card)}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {drawnCards && (
+        <p role="status">
+          You drew: {drawnCards.map((card) => cardLabel(card)).join(", ")}
+        </p>
+      )}
 
       <h2>Players</h2>
       <ul>

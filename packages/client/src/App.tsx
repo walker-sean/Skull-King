@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import type { Card, RoomState, ScoringMode } from "@skull-king/shared";
+import type {
+  Alliance,
+  Card,
+  PirateAbilityEffect,
+  RoomState,
+  ScoringMode,
+} from "@skull-king/shared";
 import { areAllBidsSubmitted } from "@skull-king/engine";
 import type { SocketClient } from "./socketClient.js";
 import { BiddingScreen } from "./BiddingScreen.js";
@@ -7,8 +13,17 @@ import { HomeScreen } from "./HomeScreen.js";
 import { LobbyScreen } from "./LobbyScreen.js";
 import { TrickPlayScreen } from "./TrickPlayScreen.js";
 import { REJECTION_MESSAGES } from "./rejectionMessages.js";
+import {
+  deriveNewAlliance,
+  isAllianceVisibleTo,
+} from "./viewModel/allianceViewModel.js";
 import { selectBiddingView } from "./viewModel/biddingViewModel.js";
 import { selectLobbyView } from "./viewModel/lobbyViewModel.js";
+import {
+  deriveDrawnCards,
+  selectPeekedCards,
+  selectPirateAbilityView,
+} from "./viewModel/pirateAbilityViewModel.js";
 import {
   deriveTrickOutcome,
   selectTrickPlayView,
@@ -24,6 +39,8 @@ export function App({ socketClient }: AppProps) {
   const [localPlayerName, setLocalPlayerName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [trickOutcome, setTrickOutcome] = useState<TrickOutcome | null>(null);
+  const [newAlliance, setNewAlliance] = useState<Alliance | null>(null);
+  const [drawnCards, setDrawnCards] = useState<Card[] | null>(null);
   const roomStateRef = useRef<RoomState | null>(null);
 
   useEffect(() => {
@@ -34,9 +51,15 @@ export function App({ socketClient }: AppProps) {
     () =>
       socketClient.onRoomState((next) => {
         setTrickOutcome(deriveTrickOutcome(roomStateRef.current, next));
+        setNewAlliance(deriveNewAlliance(roomStateRef.current, next));
+        if (localPlayerName) {
+          setDrawnCards(
+            deriveDrawnCards(roomStateRef.current, next, localPlayerName),
+          );
+        }
         setRoomState(next);
       }),
-    [socketClient],
+    [socketClient, localPlayerName],
   );
 
   async function handleCreateRoom(hostName: string) {
@@ -95,6 +118,22 @@ export function App({ socketClient }: AppProps) {
     const response = await socketClient.playCard(roomState.roomCode, card);
     if (response.ok) {
       setTrickOutcome(deriveTrickOutcome(roomState, response.state));
+      setNewAlliance(deriveNewAlliance(roomState, response.state));
+      setRoomState(response.state);
+    } else {
+      setError(REJECTION_MESSAGES[response.event.reason]);
+    }
+  }
+
+  async function handleInvokePirateAbility(effect: PirateAbilityEffect) {
+    if (!roomState || !localPlayerName) return;
+    setError(null);
+    const response = await socketClient.invokePirateAbility(
+      roomState.roomCode,
+      effect,
+    );
+    if (response.ok) {
+      setDrawnCards(deriveDrawnCards(roomState, response.state, localPlayerName));
       setRoomState(response.state);
     } else {
       setError(REJECTION_MESSAGES[response.event.reason]);
@@ -108,6 +147,15 @@ export function App({ socketClient }: AppProps) {
           view={selectTrickPlayView(roomState, localPlayerName, trickOutcome)}
           error={error}
           onPlayCard={handlePlayCard}
+          pirateAbility={selectPirateAbilityView(roomState, localPlayerName)}
+          onInvokePirateAbility={handleInvokePirateAbility}
+          peekedCards={selectPeekedCards(roomState, localPlayerName)}
+          drawnCards={drawnCards}
+          allianceBanner={
+            newAlliance && isAllianceVisibleTo(newAlliance, localPlayerName)
+              ? newAlliance
+              : null
+          }
         />
       );
     }

@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import type { RoomState } from "@skull-king/shared";
 import { App } from "./App.js";
@@ -19,6 +25,7 @@ function createMockSocketClient(
     startGame: vi.fn(),
     submitBid: vi.fn(),
     playCard: vi.fn(),
+    invokePirateAbility: vi.fn(),
     onRoomState: vi.fn((handler) => {
       roomStateHandler = handler;
       return () => {
@@ -678,5 +685,224 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Parrot 7" }));
 
     expect(await screen.findByText("Trick voided")).toBeInTheDocument();
+  });
+
+  it("lets the Player named in pendingPirateAbility resolve Harry the Giant's Bid adjustment", async () => {
+    const pendingState: RoomState = {
+      ...trickPlayState,
+      pendingPirateAbility: { playerName: "Alice", pirateName: "HarryTheGiant" },
+    };
+    const afterInvoke: RoomState = {
+      ...trickPlayState,
+      pendingPirateAbility: null,
+      players: [
+        { ...trickPlayAlice, bid: 2 },
+        trickPlayBob,
+        trickPlayCarol,
+      ],
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: pendingState }),
+      invokePirateAbility: vi
+        .fn()
+        .mockResolvedValue({ ok: true, state: afterInvoke }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 1/i);
+
+    expect(
+      screen.getByText(/advanced pirate ability: harry the giant/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Current Bid: 1")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "+1" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /confirm bid adjustment/i }),
+    );
+
+    expect(socketClient.invokePirateAbility).toHaveBeenCalledWith("ABCD", {
+      pirateName: "HarryTheGiant",
+      bidAdjustment: 1,
+    });
+    await screen.findByText(/round 1/i);
+    expect(
+      screen.queryByText(/advanced pirate ability/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("only shows the pending-ability status, not the resolution form, to Players it isn't for", async () => {
+    const pendingState: RoomState = {
+      ...trickPlayState,
+      pendingPirateAbility: { playerName: "Alice", pirateName: "HarryTheGiant" },
+    };
+    const socketClient = createMockSocketClient({
+      joinRoom: vi.fn().mockResolvedValue({ ok: true, state: pendingState }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/room code/i), {
+      target: { value: "ABCD" },
+    });
+    fireEvent.change(screen.getByLabelText(/display name/i), {
+      target: { value: "Bob" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /join room/i }));
+
+    expect(
+      await screen.findByText(/alice is invoking harry the giant's ability/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /confirm bid adjustment/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("lets Juanita Jade's ability be invoked with no input, then shows only that Player the peeked cards", async () => {
+    const pendingState: RoomState = {
+      ...trickPlayState,
+      pendingPirateAbility: { playerName: "Alice", pirateName: "JuanitaJade" },
+      remainingDeck: [{ kind: "Escape" }],
+    };
+    const afterInvoke: RoomState = {
+      ...trickPlayState,
+      pendingPirateAbility: null,
+      pendingReveal: { playerName: "Alice", cards: [{ kind: "Escape" }] },
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: pendingState }),
+      invokePirateAbility: vi
+        .fn()
+        .mockResolvedValue({ ok: true, state: afterInvoke }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 1/i);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /peek at the remaining deck/i }),
+    );
+
+    expect(socketClient.invokePirateAbility).toHaveBeenCalledWith("ABCD", {
+      pirateName: "JuanitaJade",
+    });
+    expect(
+      await screen.findByText(/undealt cards you peeked at/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Escape")).toBeInTheDocument();
+  });
+
+  it("surfaces a newly formed Loot Alliance to the Players it pairs", async () => {
+    const beforeTrick: RoomState = {
+      ...trickPlayState,
+      currentTrick: [
+        { playerName: "Bob", card: { kind: "Escape" } },
+        { playerName: "Carol", card: { kind: "Escape" } },
+      ],
+      trickLeader: "Bob",
+      players: [
+        { ...trickPlayAlice, hand: [{ kind: "Loot" }] },
+        trickPlayBob,
+        trickPlayCarol,
+      ],
+    };
+    const afterTrick: RoomState = {
+      ...trickPlayState,
+      currentTrick: [],
+      trickLeader: "Bob",
+      alliances: [
+        { round: 1, lootPlayerName: "Alice", winnerName: "Bob" },
+      ],
+      players: [
+        { ...trickPlayAlice, hand: [] },
+        { ...trickPlayBob, tricksWon: 1 },
+        trickPlayCarol,
+      ],
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: beforeTrick }),
+      playCard: vi.fn().mockResolvedValue({ ok: true, state: afterTrick }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 1/i);
+
+    fireEvent.click(screen.getByRole("button", { name: "Loot" }));
+
+    expect(
+      await screen.findByText(/loot alliance formed between alice and bob/i),
+    ).toBeInTheDocument();
+  });
+
+  it("lets Bendt the Bandit's discard be chosen, then shows the drawn replacements inferred from the hand diff", async () => {
+    const pendingState: RoomState = {
+      ...trickPlayState,
+      pendingPirateAbility: { playerName: "Alice", pirateName: "BendtTheBandit" },
+      players: [
+        {
+          ...trickPlayAlice,
+          hand: [{ kind: "Escape" }, { kind: "Escape" }],
+        },
+        trickPlayBob,
+        trickPlayCarol,
+      ],
+    };
+    const afterInvoke: RoomState = {
+      ...trickPlayState,
+      pendingPirateAbility: null,
+      players: [
+        {
+          ...trickPlayAlice,
+          hand: [
+            { kind: "Suited", suit: "Parrot", rank: 7 },
+            { kind: "Tigress" },
+          ],
+        },
+        trickPlayBob,
+        trickPlayCarol,
+      ],
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: pendingState }),
+      invokePirateAbility: vi
+        .fn()
+        .mockResolvedValue({ ok: true, state: afterInvoke }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 1/i);
+
+    const panel = screen
+      .getByRole("heading", { name: /bendt the bandit/i })
+      .closest("section")!;
+    const escapeButtons = within(panel).getAllByRole("button", {
+      name: "Escape",
+    });
+    fireEvent.click(escapeButtons[0]!);
+    fireEvent.click(escapeButtons[1]!);
+    fireEvent.click(within(panel).getByRole("button", { name: /^discard$/i }));
+
+    expect(socketClient.invokePirateAbility).toHaveBeenCalledWith("ABCD", {
+      pirateName: "BendtTheBandit",
+      discard: [{ kind: "Escape" }, { kind: "Escape" }],
+    });
+    expect(
+      await screen.findByText("You drew: Parrot 7, Tigress"),
+    ).toBeInTheDocument();
   });
 });
