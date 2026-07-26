@@ -905,4 +905,85 @@ describe("App", () => {
       await screen.findByText("You drew: Parrot 7, Tigress"),
     ).toBeInTheDocument();
   });
+
+  it("overlays a Paused banner naming the disconnected Player over the Bidding screen, disabling the Bid input until they reconnect", async () => {
+    const pausedState: RoomState = {
+      ...biddingState,
+      status: "Paused",
+      players: [biddingAlice, { ...biddingBob, connected: false }],
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: pausedState }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 3/i);
+
+    expect(
+      within(screen.getByRole("status")).getByText(/bob/i),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/^bid$/i)).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /submit bid/i }),
+    ).toBeDisabled();
+
+    const resumedState: RoomState = {
+      ...biddingState,
+      status: "Active",
+      players: [biddingAlice, biddingBob],
+    };
+    (
+      socketClient as unknown as { emitRoomState: (s: RoomState) => void }
+    ).emitRoomState(resumedState);
+
+    await screen.findByLabelText(/^bid$/i);
+    expect(screen.getByLabelText(/^bid$/i)).not.toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /submit bid/i }),
+    ).not.toBeDisabled();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("overlays a Paused banner naming the disconnected Player over the Trick-play screen, disabling card taps until they reconnect", async () => {
+    const pausedState: RoomState = {
+      ...trickPlayState,
+      status: "Paused",
+      players: [trickPlayAlice, { ...trickPlayBob, connected: false }, trickPlayCarol],
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: pausedState }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 1/i);
+
+    expect(
+      within(screen.getByRole("status")).getByText(/bob/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Parrot 7" }),
+    ).toBeDisabled();
+
+    const resumedState: RoomState = {
+      ...trickPlayState,
+      status: "Active",
+      players: [trickPlayAlice, trickPlayBob, trickPlayCarol],
+    };
+    (
+      socketClient as unknown as { emitRoomState: (s: RoomState) => void }
+    ).emitRoomState(resumedState);
+
+    await screen.findByRole("button", { name: "Parrot 7" });
+    expect(
+      screen.getByRole("button", { name: "Parrot 7" }),
+    ).not.toBeDisabled();
+  });
 });

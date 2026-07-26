@@ -7,6 +7,7 @@ import type { PirateAbilityViewModel } from "./viewModel/pirateAbilityViewModel.
 export interface PirateAbilityPanelProps {
   view: PirateAbilityViewModel;
   onInvoke: (effect: PirateAbilityEffect) => void;
+  disabled?: boolean;
 }
 
 const PIRATE_DISPLAY_NAMES: Record<PirateName, string> = {
@@ -20,9 +21,11 @@ const PIRATE_DISPLAY_NAMES: Record<PirateName, string> = {
 function RosieDLaneyForm({
   view,
   onInvoke,
+  disabled,
 }: {
   view: PirateAbilityViewModel;
   onInvoke: (effect: PirateAbilityEffect) => void;
+  disabled: boolean;
 }) {
   const [chosenLeaderName, setChosenLeaderName] = useState(
     view.playerNames[0] ?? "",
@@ -34,6 +37,7 @@ function RosieDLaneyForm({
       <select
         id="chosen-leader"
         value={chosenLeaderName}
+        disabled={disabled}
         onChange={(event) => setChosenLeaderName(event.target.value)}
       >
         {view.playerNames.map((name) => (
@@ -44,6 +48,7 @@ function RosieDLaneyForm({
       </select>
       <button
         type="button"
+        disabled={disabled}
         onClick={() =>
           onInvoke({ pirateName: "RosieDLaney", chosenLeaderName })
         }
@@ -57,9 +62,11 @@ function RosieDLaneyForm({
 function HarryTheGiantForm({
   view,
   onInvoke,
+  disabled,
 }: {
   view: PirateAbilityViewModel;
   onInvoke: (effect: PirateAbilityEffect) => void;
+  disabled: boolean;
 }) {
   const [bidAdjustment, setBidAdjustment] = useState<-1 | 0 | 1>(0);
   const currentBid = view.currentBid ?? 0;
@@ -71,7 +78,7 @@ function HarryTheGiantForm({
       <button
         type="button"
         aria-pressed={bidAdjustment === -1}
-        disabled={!isValidBidAdjustment(currentBid, view.handSize, -1)}
+        disabled={disabled || !isValidBidAdjustment(currentBid, view.handSize, -1)}
         onClick={() => setBidAdjustment(-1)}
       >
         -1
@@ -79,6 +86,7 @@ function HarryTheGiantForm({
       <button
         type="button"
         aria-pressed={bidAdjustment === 0}
+        disabled={disabled}
         onClick={() => setBidAdjustment(0)}
       >
         0
@@ -86,7 +94,7 @@ function HarryTheGiantForm({
       <button
         type="button"
         aria-pressed={bidAdjustment === 1}
-        disabled={!isValidBidAdjustment(currentBid, view.handSize, 1)}
+        disabled={disabled || !isValidBidAdjustment(currentBid, view.handSize, 1)}
         onClick={() => setBidAdjustment(1)}
       >
         +1
@@ -94,6 +102,7 @@ function HarryTheGiantForm({
       <p>New Bid: {newBid}</p>
       <button
         type="button"
+        disabled={disabled}
         onClick={() => onInvoke({ pirateName: "HarryTheGiant", bidAdjustment })}
       >
         Confirm Bid Adjustment
@@ -105,9 +114,11 @@ function HarryTheGiantForm({
 function BendtTheBanditForm({
   view,
   onInvoke,
+  disabled,
 }: {
   view: PirateAbilityViewModel;
   onInvoke: (effect: PirateAbilityEffect) => void;
+  disabled: boolean;
 }) {
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
@@ -132,6 +143,7 @@ function BendtTheBanditForm({
             <button
               type="button"
               aria-pressed={selectedIndices.includes(index)}
+              disabled={disabled}
               onClick={() => toggle(index)}
             >
               {cardLabel(card)}
@@ -141,7 +153,7 @@ function BendtTheBanditForm({
       </ul>
       <button
         type="button"
-        disabled={selectedIndices.length !== 2}
+        disabled={disabled || selectedIndices.length !== 2}
         onClick={() =>
           onInvoke({
             pirateName: "BendtTheBandit",
@@ -160,8 +172,10 @@ function BendtTheBanditForm({
 
 function RascalOfRoatanForm({
   onInvoke,
+  disabled,
 }: {
   onInvoke: (effect: PirateAbilityEffect) => void;
+  disabled: boolean;
 }) {
   return (
     <>
@@ -170,6 +184,7 @@ function RascalOfRoatanForm({
         <button
           key={amount}
           type="button"
+          disabled={disabled}
           onClick={() => onInvoke({ pirateName: "RascalOfRoatan", bet: amount })}
         >
           Bet {amount}
@@ -181,12 +196,15 @@ function RascalOfRoatanForm({
 
 function JuanitaJadeForm({
   onInvoke,
+  disabled,
 }: {
   onInvoke: (effect: PirateAbilityEffect) => void;
+  disabled: boolean;
 }) {
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={() => onInvoke({ pirateName: "JuanitaJade" })}
     >
       Peek at the remaining Deck
@@ -197,6 +215,7 @@ function JuanitaJadeForm({
 export function PirateAbilityPanel({
   view,
   onInvoke,
+  disabled = false,
 }: PirateAbilityPanelProps) {
   const displayName = PIRATE_DISPLAY_NAMES[view.pirateName];
 
@@ -215,19 +234,19 @@ export function PirateAbilityPanel({
     <section>
       <h2>Advanced Pirate Ability: {displayName}</h2>
       {view.pirateName === "RosieDLaney" && (
-        <RosieDLaneyForm view={view} onInvoke={onInvoke} />
+        <RosieDLaneyForm view={view} onInvoke={onInvoke} disabled={disabled} />
       )}
       {view.pirateName === "HarryTheGiant" && (
-        <HarryTheGiantForm view={view} onInvoke={onInvoke} />
+        <HarryTheGiantForm view={view} onInvoke={onInvoke} disabled={disabled} />
       )}
       {view.pirateName === "BendtTheBandit" && (
-        <BendtTheBanditForm view={view} onInvoke={onInvoke} />
+        <BendtTheBanditForm view={view} onInvoke={onInvoke} disabled={disabled} />
       )}
       {view.pirateName === "RascalOfRoatan" && (
-        <RascalOfRoatanForm onInvoke={onInvoke} />
+        <RascalOfRoatanForm onInvoke={onInvoke} disabled={disabled} />
       )}
       {view.pirateName === "JuanitaJade" && (
-        <JuanitaJadeForm onInvoke={onInvoke} />
+        <JuanitaJadeForm onInvoke={onInvoke} disabled={disabled} />
       )}
     </section>
   );

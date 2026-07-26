@@ -5,9 +5,15 @@ export interface BiddingScreenProps {
   view: BiddingViewModel;
   error: string | null;
   onSubmitBid: (bid: number) => void;
+  disabled?: boolean;
 }
 
-export function BiddingScreen({ view, error, onSubmitBid }: BiddingScreenProps) {
+export function BiddingScreen({
+  view,
+  error,
+  onSubmitBid,
+  disabled = false,
+}: BiddingScreenProps) {
   const [bid, setBid] = useState(0);
 
   return (
@@ -27,6 +33,7 @@ export function BiddingScreen({ view, error, onSubmitBid }: BiddingScreenProps) 
             min={0}
             max={view.handSize}
             value={bid}
+            disabled={disabled}
             onChange={(event) => {
               const clamped = Math.min(
                 Math.max(Number(event.target.value), 0),
@@ -35,7 +42,11 @@ export function BiddingScreen({ view, error, onSubmitBid }: BiddingScreenProps) 
               setBid(Number.isNaN(clamped) ? 0 : clamped);
             }}
           />
-          <button type="button" onClick={() => onSubmitBid(bid)}>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => onSubmitBid(bid)}
+          >
             Submit Bid
           </button>
           {error && <p role="alert">{error}</p>}

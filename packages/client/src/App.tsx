@@ -11,6 +11,7 @@ import type { SocketClient } from "./socketClient.js";
 import { BiddingScreen } from "./BiddingScreen.js";
 import { HomeScreen } from "./HomeScreen.js";
 import { LobbyScreen } from "./LobbyScreen.js";
+import { PausedOverlay } from "./PausedOverlay.js";
 import { TrickPlayScreen } from "./TrickPlayScreen.js";
 import { REJECTION_MESSAGES } from "./rejectionMessages.js";
 import {
@@ -19,6 +20,7 @@ import {
 } from "./viewModel/allianceViewModel.js";
 import { selectBiddingView } from "./viewModel/biddingViewModel.js";
 import { selectLobbyView } from "./viewModel/lobbyViewModel.js";
+import { selectDisconnectedPlayers } from "./viewModel/pausedViewModel.js";
 import {
   deriveDrawnCards,
   selectPeekedCards,
@@ -140,31 +142,50 @@ export function App({ socketClient }: AppProps) {
     }
   }
 
-  if (roomState && localPlayerName && roomState.status === "Active") {
+  if (
+    roomState &&
+    localPlayerName &&
+    (roomState.status === "Active" || roomState.status === "Paused")
+  ) {
+    const paused = roomState.status === "Paused";
+    const pausedOverlay = paused && (
+      <PausedOverlay
+        disconnectedPlayers={selectDisconnectedPlayers(roomState)}
+      />
+    );
+
     if (areAllBidsSubmitted(roomState)) {
       return (
-        <TrickPlayScreen
-          view={selectTrickPlayView(roomState, localPlayerName, trickOutcome)}
-          error={error}
-          onPlayCard={handlePlayCard}
-          pirateAbility={selectPirateAbilityView(roomState, localPlayerName)}
-          onInvokePirateAbility={handleInvokePirateAbility}
-          peekedCards={selectPeekedCards(roomState, localPlayerName)}
-          drawnCards={drawnCards}
-          allianceBanner={
-            newAlliance && isAllianceVisibleTo(newAlliance, localPlayerName)
-              ? newAlliance
-              : null
-          }
-        />
+        <>
+          {pausedOverlay}
+          <TrickPlayScreen
+            view={selectTrickPlayView(roomState, localPlayerName, trickOutcome)}
+            error={error}
+            onPlayCard={handlePlayCard}
+            pirateAbility={selectPirateAbilityView(roomState, localPlayerName)}
+            onInvokePirateAbility={handleInvokePirateAbility}
+            peekedCards={selectPeekedCards(roomState, localPlayerName)}
+            drawnCards={drawnCards}
+            allianceBanner={
+              newAlliance && isAllianceVisibleTo(newAlliance, localPlayerName)
+                ? newAlliance
+                : null
+            }
+            disabled={paused}
+          />
+        </>
       );
     }
     return (
-      <BiddingScreen
-        view={selectBiddingView(roomState, localPlayerName)}
-        error={error}
-        onSubmitBid={handleSubmitBid}
-      />
+      <>
+        {pausedOverlay}
+        <BiddingScreen
+          view={selectBiddingView(roomState, localPlayerName)}
+          error={error}
+          onSubmitBid={handleSubmitBid}
+          disabled={paused}
+        />
+      </>
     );
   }
 

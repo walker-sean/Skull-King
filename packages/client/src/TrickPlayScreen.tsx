@@ -19,6 +19,7 @@ export interface TrickPlayScreenProps {
   peekedCards: Card[] | null;
   drawnCards: Card[] | null;
   allianceBanner: Alliance | null;
+  disabled?: boolean;
 }
 
 export function TrickPlayScreen({
@@ -30,13 +31,14 @@ export function TrickPlayScreen({
   peekedCards,
   drawnCards,
   allianceBanner,
+  disabled = false,
 }: TrickPlayScreenProps) {
   const [decliningTigress, setDecliningTigress] = useState<TigressCard | null>(
     null,
   );
 
   function handleCardClick(entry: HandCardView) {
-    if (!entry.legal || !view.isYourTurn || pirateAbility) return;
+    if (disabled || !entry.legal || !view.isYourTurn || pirateAbility) return;
     if (entry.card.kind === "Tigress") {
       setDecliningTigress(entry.card);
       return;
@@ -88,7 +90,12 @@ export function TrickPlayScreen({
           <li key={index}>
             <button
               type="button"
-              disabled={!entry.legal || !view.isYourTurn || pirateAbility !== null}
+              disabled={
+                disabled ||
+                !entry.legal ||
+                !view.isYourTurn ||
+                pirateAbility !== null
+              }
               onClick={() => handleCardClick(entry)}
             >
               {cardLabel(entry.card)}
@@ -100,10 +107,18 @@ export function TrickPlayScreen({
       {decliningTigress && (
         <section>
           <p>Play the Tigress as:</p>
-          <button type="button" onClick={() => declareTigress("Pirate")}>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => declareTigress("Pirate")}
+          >
             Play as Pirate
           </button>
-          <button type="button" onClick={() => declareTigress("Escape")}>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => declareTigress("Escape")}
+          >
             Play as Escape
           </button>
         </section>
@@ -122,6 +137,7 @@ export function TrickPlayScreen({
         <PirateAbilityPanel
           view={pirateAbility}
           onInvoke={onInvokePirateAbility}
+          disabled={disabled}
         />
       )}
 
