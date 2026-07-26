@@ -30,4 +30,14 @@ describe("vitest.setup polyfills", () => {
     expect(navigator.vibrate(200)).toBeUndefined();
     expect(navigator.vibrate).toHaveBeenCalledWith(200);
   });
+
+  it("provides a working localStorage even though Node shadows jsdom's", () => {
+    window.localStorage.setItem("skull-king:test-key", "value");
+
+    expect(window.localStorage.getItem("skull-king:test-key")).toBe("value");
+
+    window.localStorage.clear();
+
+    expect(window.localStorage.getItem("skull-king:test-key")).toBeNull();
+  });
 });

@@ -46,4 +46,43 @@ Object.defineProperty(navigator, "vibrate", {
   configurable: true,
 });
 
+// Node's own global `localStorage` (stubbed out here since no
+// `--localstorage-file` is configured) shadows jsdom's working
+// implementation on `window`/`globalThis` in this environment. Replace it
+// with a simple in-memory Storage so code under test can actually persist
+// values across a re-import within the same test run.
+class MemoryStorage implements Storage {
+  #store = new Map<string, string>();
+
+  get length(): number {
+    return this.#store.size;
+  }
+
+  clear(): void {
+    this.#store.clear();
+  }
+
+  getItem(key: string): string | null {
+    return this.#store.get(key) ?? null;
+  }
+
+  key(index: number): string | null {
+    return Array.from(this.#store.keys())[index] ?? null;
+  }
+
+  removeItem(key: string): void {
+    this.#store.delete(key);
+  }
+
+  setItem(key: string, value: string): void {
+    this.#store.set(key, value);
+  }
+}
+
+Object.defineProperty(window, "localStorage", {
+  value: new MemoryStorage(),
+  writable: true,
+  configurable: true,
+});
+
 export { setMatchMediaMatches };
