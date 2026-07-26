@@ -18,6 +18,7 @@ function createMockSocketClient(
     joinRoom: vi.fn(),
     startGame: vi.fn(),
     submitBid: vi.fn(),
+    playCard: vi.fn(),
     onRoomState: vi.fn((handler) => {
       roomStateHandler = handler;
       return () => {
@@ -400,7 +401,7 @@ describe("App", () => {
     expect(screen.queryByLabelText(/^bid$/i)).not.toBeInTheDocument();
   });
 
-  it("shows other Players as having bid without revealing values, then reveals every Bid once everyone's in", async () => {
+  it("shows other Players as having bid without revealing values, then moves to Trick-play once everyone's in", async () => {
     const partiallyBid: RoomState = {
       ...biddingState,
       players: [
@@ -435,8 +436,8 @@ describe("App", () => {
       socketClient as unknown as { emitRoomState: (s: RoomState) => void }
     ).emitRoomState(revealed);
 
-    expect(await screen.findByText("2")).toBeInTheDocument();
-    expect(await screen.findByText("1")).toBeInTheDocument();
+    expect(await screen.findByText("Waiting for Alice")).toBeInTheDocument();
+    expect(screen.getByText(/your hand/i)).toBeInTheDocument();
   });
 
   it("shows the rejection message when a Bid submission is rejected", async () => {
@@ -467,5 +468,215 @@ describe("App", () => {
     expect(
       await screen.findByText(/that bid isn't valid/i),
     ).toBeInTheDocument();
+  });
+
+  const trickPlayAlice = {
+    name: "Alice",
+    isHost: true,
+    connected: true,
+    hand: [
+      { kind: "Suited", suit: "Parrot", rank: 7 },
+      { kind: "Tigress" },
+    ],
+    bid: 1,
+    hasBid: true,
+    tricksWon: 0,
+    score: 0,
+  } as const satisfies RoomState["players"][number];
+  const trickPlayBob = {
+    name: "Bob",
+    isHost: false,
+    connected: true,
+    hand: [{ kind: "Escape" }],
+    bid: 0,
+    hasBid: true,
+    tricksWon: 0,
+    score: 0,
+  } as const satisfies RoomState["players"][number];
+  const trickPlayCarol = {
+    name: "Carol",
+    isHost: false,
+    connected: true,
+    hand: [{ kind: "Escape" }],
+    bid: 0,
+    hasBid: true,
+    tricksWon: 0,
+    score: 0,
+  } as const satisfies RoomState["players"][number];
+
+  const trickPlayState: RoomState = {
+    roomCode: "ABCD",
+    status: "Active",
+    players: [trickPlayAlice, trickPlayBob, trickPlayCarol],
+    scoringMode: "Traditional",
+    currentRound: 1,
+    currentTrick: [],
+    trickLeader: "Alice",
+    alliances: [],
+    remainingDeck: [],
+    pendingPirateAbility: null,
+    pirateBets: [],
+    cardBonuses: [],
+    roundScores: [],
+    pendingReveal: null,
+  };
+
+  it("plays a legal card once Bidding is complete, reflecting it in the Trick and Hand", async () => {
+    const afterPlay: RoomState = {
+      ...trickPlayState,
+      currentTrick: [
+        { playerName: "Alice", card: { kind: "Suited", suit: "Parrot", rank: 7 } },
+      ],
+      players: [
+        { ...trickPlayAlice, hand: [{ kind: "Tigress" }] },
+        trickPlayBob,
+        trickPlayCarol,
+      ],
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi
+        .fn()
+        .mockResolvedValue({ ok: true, state: trickPlayState }),
+      playCard: vi.fn().mockResolvedValue({ ok: true, state: afterPlay }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 1/i);
+
+    expect(screen.getByText("Your turn")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Parrot 7" }));
+
+    expect(socketClient.playCard).toHaveBeenCalledWith("ABCD", {
+      kind: "Suited",
+      suit: "Parrot",
+      rank: 7,
+    });
+    expect(await screen.findByText("Alice (You): Parrot 7")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Parrot 7" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("requires declaring the Tigress as Pirate or Escape before it's played", async () => {
+    const afterPlay: RoomState = {
+      ...trickPlayState,
+      currentTrick: [
+        { playerName: "Alice", card: { kind: "Tigress", declaredAs: "Pirate" } },
+      ],
+      players: [
+        {
+          ...trickPlayAlice,
+          hand: [{ kind: "Suited", suit: "Parrot", rank: 7 }],
+        },
+        trickPlayBob,
+        trickPlayCarol,
+      ],
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi
+        .fn()
+        .mockResolvedValue({ ok: true, state: trickPlayState }),
+      playCard: vi.fn().mockResolvedValue({ ok: true, state: afterPlay }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 1/i);
+
+    fireEvent.click(screen.getByRole("button", { name: "Tigress" }));
+
+    expect(socketClient.playCard).not.toHaveBeenCalled();
+    expect(screen.getByText(/play the tigress as/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /play as pirate/i }));
+
+    expect(socketClient.playCard).toHaveBeenCalledWith("ABCD", {
+      kind: "Tigress",
+      declaredAs: "Pirate",
+    });
+  });
+
+  it("narrates a won Trick once it completes, naming the winner", async () => {
+    const almostCompleteTrick: RoomState = {
+      ...trickPlayState,
+      currentTrick: [
+        { playerName: "Bob", card: { kind: "Escape" } },
+        { playerName: "Carol", card: { kind: "Escape" } },
+      ],
+      trickLeader: "Bob",
+    };
+    const afterTrick: RoomState = {
+      ...trickPlayState,
+      currentTrick: [],
+      trickLeader: "Alice",
+      players: [
+        { ...trickPlayAlice, hand: [{ kind: "Tigress" }], tricksWon: 1 },
+        trickPlayBob,
+        trickPlayCarol,
+      ],
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi
+        .fn()
+        .mockResolvedValue({ ok: true, state: almostCompleteTrick }),
+      playCard: vi.fn().mockResolvedValue({ ok: true, state: afterTrick }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 1/i);
+
+    expect(screen.getByText("Your turn")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Parrot 7" }));
+
+    expect(await screen.findByText("Alice won the Trick")).toBeInTheDocument();
+  });
+
+  it("narrates a voided Trick when no Player's tricksWon changed (a Kraken was in play)", async () => {
+    const almostCompleteTrick: RoomState = {
+      ...trickPlayState,
+      currentTrick: [
+        { playerName: "Bob", card: { kind: "Kraken" } },
+        { playerName: "Carol", card: { kind: "Escape" } },
+      ],
+      trickLeader: "Bob",
+    };
+    const afterTrick: RoomState = {
+      ...trickPlayState,
+      currentTrick: [],
+      trickLeader: "Carol",
+      players: [
+        { ...trickPlayAlice, hand: [{ kind: "Tigress" }] },
+        trickPlayBob,
+        trickPlayCarol,
+      ],
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi
+        .fn()
+        .mockResolvedValue({ ok: true, state: almostCompleteTrick }),
+      playCard: vi.fn().mockResolvedValue({ ok: true, state: afterTrick }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 1/i);
+
+    fireEvent.click(screen.getByRole("button", { name: "Parrot 7" }));
+
+    expect(await screen.findByText("Trick voided")).toBeInTheDocument();
   });
 });
