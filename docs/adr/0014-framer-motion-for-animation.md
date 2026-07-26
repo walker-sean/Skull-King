@@ -1,0 +1,3 @@
+# Framer Motion (or equivalent) for animation
+
+The redesign calls for choreographed, non-trivial motion — cards flying to the table during Trick resolution, synchronized Bid reveals, score tallies, screen transitions — beyond what a few CSS transitions can express cleanly. We chose a dedicated motion library over hand-rolled CSS transitions/keyframes, trading a new dependency and its bundle-size cost for declarative gesture/layout/spring animations and shared-element transitions between screens. Animations built on the library must respect `prefers-reduced-motion`, falling back to simple fades or instant state changes.
