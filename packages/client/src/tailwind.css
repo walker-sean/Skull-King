@@ -1,0 +1,10 @@
+@import url("https://fonts.googleapis.com/css2?family=Pirata+One&display=swap");
+/*
+ * Preflight (Tailwind's global CSS reset) is intentionally omitted here:
+ * this ticket must not change any existing screen's rendered output, and
+ * index.css already owns the reset. Preflight comes back once index.css's
+ * rules are migrated into Tailwind screen-by-screen.
+ */
+@import "tailwindcss/theme" layer(theme);
+@import "tailwindcss/utilities" layer(utilities);
+@config "../tailwind.config.ts";
