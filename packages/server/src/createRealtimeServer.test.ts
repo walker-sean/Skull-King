@@ -11,6 +11,7 @@ import type {
   CommandResponse,
   RoomState,
   ServerToClientEvents,
+  Suit,
 } from "@skull-king/shared";
 import { createRealtimeServer } from "./createRealtimeServer.js";
 
@@ -99,8 +100,10 @@ describe("createRealtimeServer", () => {
     if (!created.ok) throw new Error("expected success");
     const { roomCode } = created.state;
 
-    const broadcastReceived = new Promise<unknown>((resolve) => {
-      host.on("roomState", resolve);
+    const broadcastReceived = new Promise<RoomState>((resolve) => {
+      host.on("roomState", (state) => {
+        if (state.players.some((p) => p.name === "Bob")) resolve(state);
+      });
     });
 
     const joiner = await newClient();
@@ -457,6 +460,7 @@ describe("createRealtimeServer", () => {
     carol: Client;
     roomCode: string;
     hands: Record<"Alice" | "Bob" | "Carol", Card>;
+    fullHands: Record<"Alice" | "Bob" | "Carol", Card[]>;
   }> {
     const { host, bob, carol, roomCode } = await startedRoomOf3();
     const aliceResponse = await emit(host, "submitBid", { roomCode, bid: 0 });
@@ -466,15 +470,15 @@ describe("createRealtimeServer", () => {
       throw new Error("expected successful Bids");
     }
 
-    const aliceCard = aliceResponse.state.players.find(
+    const aliceHand = aliceResponse.state.players.find(
       (p) => p.name === "Alice",
-    )?.hand[0];
-    const bobCard = bobResponse.state.players.find((p) => p.name === "Bob")
-      ?.hand[0];
-    const carolCard = carolResponse.state.players.find(
+    )?.hand;
+    const bobHand = bobResponse.state.players.find((p) => p.name === "Bob")
+      ?.hand;
+    const carolHand = carolResponse.state.players.find(
       (p) => p.name === "Carol",
-    )?.hand[0];
-    if (!aliceCard || !bobCard || !carolCard)
+    )?.hand;
+    if (!aliceHand || !bobHand || !carolHand)
       throw new Error("expected dealt cards");
 
     return {
@@ -482,8 +486,49 @@ describe("createRealtimeServer", () => {
       bob,
       carol,
       roomCode,
-      hands: { Alice: aliceCard, Bob: bobCard, Carol: carolCard },
+      hands: {
+        Alice: toPlayable(aliceHand[0]!),
+        Bob: toPlayable(bobHand[0]!),
+        Carol: toPlayable(carolHand[0]!),
+      },
+      fullHands: {
+        Alice: aliceHand.map(toPlayable),
+        Bob: bobHand.map(toPlayable),
+        Carol: carolHand.map(toPlayable),
+      },
     };
+  }
+
+  // A raw dealt Tigress has no declaration yet, but playCard rejects an undeclared
+  // Tigress with InvalidTigressDeclaration (see packages/engine/src/trickPlay.ts) —
+  // Round 1 (used by these fixtures) deals a single Card per Player, so there's no
+  // other Card to fall back on if that Card happens to be the Tigress.
+  function toPlayable(card: Card): Card {
+    return card.kind === "Tigress" && card.declaredAs === undefined
+      ? { ...card, declaredAs: "Pirate" }
+      : card;
+  }
+
+  // A Suited Card has no Suit-following constraint if it's the Trick's first Suited
+  // Card; only later plays must match that led Suit if the Player holds one (see
+  // packages/engine/src/trickPlay.ts's MustFollowSuit rejection). Tests that have
+  // multiple Players play in the same Trick use this to pick a legal Card instead of
+  // assuming an arbitrary hand Card will always be playable.
+  function suitOf(card: Card): Suit | null {
+    return card.kind === "Suited" ? card.suit : null;
+  }
+
+  function ledSuitOf(playedCards: readonly Card[]): Suit | null {
+    for (const card of playedCards) {
+      const suit = suitOf(card);
+      if (suit !== null) return suit;
+    }
+    return null;
+  }
+
+  function legalCardFor(hand: readonly Card[], led: Suit | null): Card {
+    if (led === null) return hand[0]!;
+    return hand.find((card) => suitOf(card) === led) ?? hand[0]!;
   }
 
   it("rejects a play from a Player before their turn", async () => {
@@ -522,13 +567,19 @@ describe("createRealtimeServer", () => {
   });
 
   it("has the Trick's winner lead the next Trick, once every Player has played", async () => {
-    const { host, bob, carol, roomCode, hands } = await playableRoomOf3();
+    const { host, bob, carol, roomCode, hands, fullHands } =
+      await playableRoomOf3();
 
     await emit(host, "playCard", { roomCode, card: hands.Alice });
-    await emit(bob, "playCard", { roomCode, card: hands.Bob });
+    const bobCard = legalCardFor(fullHands.Bob, ledSuitOf([hands.Alice]));
+    await emit(bob, "playCard", { roomCode, card: bobCard });
+    const carolCard = legalCardFor(
+      fullHands.Carol,
+      ledSuitOf([hands.Alice, bobCard]),
+    );
     const response = await emit(carol, "playCard", {
       roomCode,
-      card: hands.Carol,
+      card: carolCard,
     });
 
     expect(response.ok).toBe(true);
