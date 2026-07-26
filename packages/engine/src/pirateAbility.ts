@@ -40,6 +40,20 @@ function removeCards(
   return remaining;
 }
 
+/**
+ * Whether Harry the Giant's Bid adjustment would land in bounds: no Bid below 0, and none
+ * above the hand size (see CONTEXT.md's Advanced Pirate Ability entry). Shared with the
+ * client so its adjustment buttons stay in sync with this rule (see ADR 0011).
+ */
+export function isValidBidAdjustment(
+  currentBid: number,
+  handSize: number,
+  adjustment: -1 | 0 | 1,
+): boolean {
+  const newBid = currentBid + adjustment;
+  return newBid >= 0 && newBid <= handSize;
+}
+
 export function invokePirateAbility(
   state: RoomState | null,
   command: InvokePirateAbilityCommand,
@@ -103,10 +117,16 @@ export function invokePirateAbility(
       if (player.bid === null) {
         return rejected(state, command.roomCode, "InvalidBidAdjustment");
       }
-      const newBid = player.bid + effect.bidAdjustment;
-      if (newBid < 0 || newBid > player.hand.length) {
+      if (
+        !isValidBidAdjustment(
+          player.bid,
+          player.hand.length,
+          effect.bidAdjustment,
+        )
+      ) {
         return rejected(state, command.roomCode, "InvalidBidAdjustment");
       }
+      const newBid = player.bid + effect.bidAdjustment;
       events.push({
         type: "BidAdjusted",
         roomCode: command.roomCode,

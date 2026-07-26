@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Card, PirateName, Player, RoomState } from "@skull-king/shared";
-import { invokePirateAbility } from "./pirateAbility.js";
+import { invokePirateAbility, isValidBidAdjustment } from "./pirateAbility.js";
 
 function suited(rank: number): Card {
   return { kind: "Suited", suit: "Parrot", rank };
@@ -493,5 +493,21 @@ describe("invokePirateAbility", () => {
         cards: remainingDeck,
       });
     });
+  });
+});
+
+describe("isValidBidAdjustment", () => {
+  it("accepts an adjustment that stays within 0 and the hand size", () => {
+    expect(isValidBidAdjustment(2, 3, 1)).toBe(true);
+    expect(isValidBidAdjustment(2, 3, -1)).toBe(true);
+    expect(isValidBidAdjustment(2, 3, 0)).toBe(true);
+  });
+
+  it("rejects an adjustment that would drop the Bid below 0", () => {
+    expect(isValidBidAdjustment(0, 3, -1)).toBe(false);
+  });
+
+  it("rejects an adjustment that would push the Bid above the hand size", () => {
+    expect(isValidBidAdjustment(3, 3, 1)).toBe(false);
   });
 });

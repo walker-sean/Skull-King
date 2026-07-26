@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { PirateAbilityEffect, PirateName } from "@skull-king/shared";
+import { isValidBidAdjustment } from "@skull-king/engine";
 import { cardLabel } from "./cardLabel.js";
 import type { PirateAbilityViewModel } from "./viewModel/pirateAbilityViewModel.js";
 
@@ -70,7 +71,7 @@ function HarryTheGiantForm({
       <button
         type="button"
         aria-pressed={bidAdjustment === -1}
-        disabled={currentBid - 1 < 0}
+        disabled={!isValidBidAdjustment(currentBid, view.handSize, -1)}
         onClick={() => setBidAdjustment(-1)}
       >
         -1
@@ -85,7 +86,7 @@ function HarryTheGiantForm({
       <button
         type="button"
         aria-pressed={bidAdjustment === 1}
-        disabled={currentBid + 1 > view.handSize}
+        disabled={!isValidBidAdjustment(currentBid, view.handSize, 1)}
         onClick={() => setBidAdjustment(1)}
       >
         +1
