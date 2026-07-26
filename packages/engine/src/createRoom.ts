@@ -23,6 +23,9 @@ export function createRoom(command: CreateRoomCommand): EngineResult {
       currentTrick: null,
       trickLeader: null,
       alliances: [],
+      remainingDeck: [],
+      pendingPirateAbility: null,
+      pirateBets: [],
     },
     events: [{ type: "RoomCreated", roomCode: command.roomCode, hostName }],
   };

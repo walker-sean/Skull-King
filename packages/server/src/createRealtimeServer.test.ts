@@ -28,7 +28,13 @@ function connectClient(port: number): Promise<Client> {
 
 function emit<Req>(
   socket: Client,
-  event: "createRoom" | "joinRoom" | "startGame" | "submitBid" | "playCard",
+  event:
+    | "createRoom"
+    | "joinRoom"
+    | "startGame"
+    | "submitBid"
+    | "playCard"
+    | "invokePirateAbility",
   request: Req,
 ): Promise<CommandResponse> {
   return new Promise((resolve) => {
@@ -529,6 +535,41 @@ describe("createRealtimeServer", () => {
     if (!response.ok) throw new Error("expected success");
     expect(response.state.currentTrick).toEqual([]);
     expect(["Alice", "Bob", "Carol"]).toContain(response.state.trickLeader);
+  });
+
+  it("lets the Trick's winner invoke a named Pirate's unlocked Advanced Pirate Ability", async () => {
+    const { host, bob, carol, roomCode } = await startedRoomOf3();
+    const aliceResponse = await emit(host, "submitBid", { roomCode, bid: 0 });
+    if (!aliceResponse.ok) throw new Error("expected success");
+
+    // Force Bob to have just won a Trick by playing Rosie D'Laney, bypassing the
+    // randomness of a real deal so the Ability is deterministically unlocked for him.
+    store.saveRoom({
+      ...aliceResponse.state,
+      pendingPirateAbility: { playerName: "Bob", pirateName: "RosieDLaney" },
+    });
+
+    const rejected = await emit(carol, "invokePirateAbility", {
+      roomCode,
+      effect: { pirateName: "RosieDLaney", chosenLeaderName: "Carol" },
+    });
+    expect(rejected.ok).toBe(false);
+    if (rejected.ok) throw new Error("expected rejection");
+    expect(rejected.event).toEqual({
+      type: "InvokePirateAbilityRejected",
+      roomCode,
+      reason: "NotYourAbility",
+    });
+
+    const response = await emit(bob, "invokePirateAbility", {
+      roomCode,
+      effect: { pirateName: "RosieDLaney", chosenLeaderName: "Carol" },
+    });
+
+    expect(response.ok).toBe(true);
+    if (!response.ok) throw new Error("expected success");
+    expect(response.state.trickLeader).toBe("Carol");
+    expect(response.state.pendingPirateAbility).toBeNull();
   });
 
   it("pauses an Active Room when a Player disconnects, showing everyone who it's waiting on", async () => {

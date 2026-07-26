@@ -4,6 +4,7 @@ import {
   createRoom,
   disconnectPlayer,
   generateRoomCode,
+  invokePirateAbility,
   joinRoom,
   playCard,
   startGame,
@@ -41,7 +42,8 @@ function isRejectionEvent(event: DomainEvent): event is RejectionEvent {
     event.type === "JoinRejected" ||
     event.type === "StartGameRejected" ||
     event.type === "SubmitBidRejected" ||
-    event.type === "PlayCardRejected"
+    event.type === "PlayCardRejected" ||
+    event.type === "InvokePirateAbilityRejected"
   );
 }
 
@@ -215,6 +217,34 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
         type: "PlayCard",
         roomCode: normalizedCode,
         card,
+        actorName,
+      });
+
+      if (result.state === null || result.events.some(isRejectionEvent)) {
+        callback({ ok: false, event: firstRejection(result.events) });
+        return;
+      }
+
+      store.saveRoom(result.state);
+      callback({
+        ok: true,
+        state: redactRoomStateFor(result.state, actorName),
+      });
+      void broadcastRoomState(normalizedCode, result.state);
+    });
+
+    socket.on("invokePirateAbility", ({ roomCode, effect }, callback) => {
+      const normalizedCode = roomCode.trim().toUpperCase();
+      const state = store.loadRoom(normalizedCode);
+      const session = sessionsBySocketId.get(socket.id);
+      const actorName =
+        session !== undefined && session.roomCode === normalizedCode
+          ? session.playerName
+          : null;
+      const result = invokePirateAbility(state, {
+        type: "InvokePirateAbility",
+        roomCode: normalizedCode,
+        effect,
         actorName,
       });
 

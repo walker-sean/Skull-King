@@ -23,6 +23,9 @@ function activeRoom(
     currentTrick: [],
     trickLeader: leaderName,
     alliances: [],
+    remainingDeck: [],
+    pendingPirateAbility: null,
+    pirateBets: [],
   };
 }
 
@@ -424,7 +427,7 @@ describe("playCard", () => {
     }
 
     const escape: Card = { kind: "Escape" };
-    const pirate: Card = { kind: "Pirate" };
+    const pirate: Card = { kind: "Pirate", name: "RosieDLaney" };
     const skullKing: Card = { kind: "SkullKing" };
     const mermaid: Card = { kind: "Mermaid" };
     const tigressAsPirate: Card = { kind: "Tigress", declaredAs: "Pirate" };
@@ -723,7 +726,7 @@ describe("playCard", () => {
     const kraken: Card = { kind: "Kraken" };
     const whiteWhale: Card = { kind: "WhiteWhale" };
     const escape: Card = { kind: "Escape" };
-    const pirate: Card = { kind: "Pirate" };
+    const pirate: Card = { kind: "Pirate", name: "RosieDLaney" };
     const skullKing: Card = { kind: "SkullKing" };
 
     describe("Loot / Alliance", () => {
@@ -892,6 +895,113 @@ describe("playCard", () => {
         });
         expect(room.trickLeader).toBe("Dave");
       });
+    });
+  });
+
+  describe("Advanced Pirate Ability unlock-gating", () => {
+    function playFullTrick(playerHands: [string, Card][]): {
+      result: ReturnType<typeof playCard>;
+      room: RoomState;
+    } {
+      const players = playerHands.map(([name, card], index) =>
+        playerWith(name, [card], index === 0),
+      );
+      let room = activeRoom(players);
+      let result = playCard(room, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: playerHands[0]![1],
+        actorName: playerHands[0]![0],
+      });
+      room = (result.state as RoomState) ?? room;
+      for (let i = 1; i < playerHands.length; i++) {
+        result = playCard(room, {
+          type: "PlayCard",
+          roomCode: "ABCD",
+          card: playerHands[i]![1],
+          actorName: playerHands[i]![0],
+        });
+        room = (result.state as RoomState) ?? room;
+      }
+      return { result, room };
+    }
+
+    it("unlocks the named Pirate's Ability for the Trick's winner", () => {
+      const { result, room } = playFullTrick([
+        ["Alice", { kind: "Escape" }],
+        ["Bob", { kind: "Pirate", name: "RosieDLaney" }],
+      ]);
+
+      expect(result.events).toContainEqual({
+        type: "PirateAbilityUnlocked",
+        roomCode: "ABCD",
+        playerName: "Bob",
+        pirateName: "RosieDLaney",
+      });
+      expect(room.pendingPirateAbility).toEqual({
+        playerName: "Bob",
+        pirateName: "RosieDLaney",
+      });
+    });
+
+    it("does not unlock an Ability when the winning card wasn't a named Pirate", () => {
+      const { result, room } = playFullTrick([
+        ["Alice", { kind: "Escape" }],
+        ["Bob", { kind: "SkullKing" }],
+      ]);
+
+      expect(result.events).not.toContainEqual(
+        expect.objectContaining({ type: "PirateAbilityUnlocked" }),
+      );
+      expect(room.pendingPirateAbility).toBeNull();
+    });
+
+    it("does not unlock an Ability for a Pirate that only shared the Trick, not won it", () => {
+      const { room } = playFullTrick([
+        ["Alice", { kind: "Pirate", name: "HarryTheGiant" }],
+        ["Bob", { kind: "SkullKing" }],
+      ]);
+
+      expect(room.pendingPirateAbility).toBeNull();
+    });
+
+    it("a Voided Trick leaves no pending Ability behind, since a Kraken/Whale void never unlocks one", () => {
+      const { room } = playFullTrick([
+        ["Alice", { kind: "Kraken" }],
+        ["Bob", { kind: "Escape" }],
+      ]);
+
+      expect(room.pendingPirateAbility).toBeNull();
+    });
+
+    it("rejects playing a card while an unlocked Ability is still pending invocation", () => {
+      const players = [
+        playerWith("Alice", [suited("Parrot", 5)], true),
+        playerWith("Bob", [suited("Parrot", 3)]),
+      ];
+      const room = {
+        ...activeRoom(players),
+        pendingPirateAbility: {
+          playerName: "Bob",
+          pirateName: "RosieDLaney" as const,
+        },
+      };
+
+      const result = playCard(room, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 5),
+        actorName: "Alice",
+      });
+
+      expect(result.state).toEqual(room);
+      expect(result.events).toEqual([
+        {
+          type: "PlayCardRejected",
+          roomCode: "ABCD",
+          reason: "PirateAbilityPending",
+        },
+      ]);
     });
   });
 });

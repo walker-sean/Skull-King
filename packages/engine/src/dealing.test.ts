@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { Card } from "@skull-king/shared";
 import { dealRound, handSizeCap, handSizeForRound } from "./dealing.js";
 
 function namesFor(count: number): string[] {
@@ -37,7 +38,7 @@ describe("dealRound", () => {
   it("deals Round N cards to each Player when within the Deck's capacity", () => {
     for (const playerCount of [3, 4, 5, 6, 7, 8]) {
       for (const round of [1, 3, 7]) {
-        const hands = dealRound(namesFor(playerCount), round);
+        const { hands } = dealRound(namesFor(playerCount), round);
         for (const name of namesFor(playerCount)) {
           expect(hands.get(name)).toHaveLength(
             handSizeForRound(round, playerCount),
@@ -48,7 +49,7 @@ describe("dealRound", () => {
   });
 
   it("deals the capped hand size for Round 10 of an 8-Player Game", () => {
-    const hands = dealRound(namesFor(8), 10);
+    const { hands } = dealRound(namesFor(8), 10);
     for (const name of namesFor(8)) {
       expect(hands.get(name)).toHaveLength(9);
     }
@@ -56,19 +57,30 @@ describe("dealRound", () => {
 
   it("deals from a single shared shuffle, never exceeding a card kind's count in the Deck", () => {
     const names = namesFor(6);
-    const hands = dealRound(names, 5);
+    const { hands, remainingDeck } = dealRound(names, 5);
     const allCards = names.flatMap((name) => hands.get(name) ?? []);
     expect(allCards).toHaveLength(30);
+    expect(remainingDeck).toHaveLength(74 - 30);
 
-    const countOf = (kind: string) =>
-      allCards.filter((card) => card.kind === kind).length;
-    expect(countOf("Pirate")).toBeLessThanOrEqual(5);
-    expect(countOf("Mermaid")).toBeLessThanOrEqual(2);
-    expect(countOf("Escape")).toBeLessThanOrEqual(5);
-    expect(countOf("Loot")).toBeLessThanOrEqual(2);
-    expect(countOf("Kraken")).toBeLessThanOrEqual(1);
-    expect(countOf("WhiteWhale")).toBeLessThanOrEqual(1);
-    expect(countOf("Tigress")).toBeLessThanOrEqual(1);
-    expect(countOf("SkullKing")).toBeLessThanOrEqual(1);
+    const countOf = (cards: Card[], kind: string) =>
+      cards.filter((card) => card.kind === kind).length;
+    expect(countOf(allCards, "Pirate")).toBeLessThanOrEqual(5);
+    expect(countOf(allCards, "Mermaid")).toBeLessThanOrEqual(2);
+    expect(countOf(allCards, "Escape")).toBeLessThanOrEqual(5);
+    expect(countOf(allCards, "Loot")).toBeLessThanOrEqual(2);
+    expect(countOf(allCards, "Kraken")).toBeLessThanOrEqual(1);
+    expect(countOf(allCards, "WhiteWhale")).toBeLessThanOrEqual(1);
+    expect(countOf(allCards, "Tigress")).toBeLessThanOrEqual(1);
+    expect(countOf(allCards, "SkullKing")).toBeLessThanOrEqual(1);
+  });
+
+  it("leaves every card not dealt to a Player in the remaining Deck", () => {
+    const names = namesFor(6);
+    const { hands, remainingDeck } = dealRound(names, 5);
+    const dealtCount = names.reduce(
+      (sum, name) => sum + (hands.get(name)?.length ?? 0),
+      0,
+    );
+    expect(dealtCount + remainingDeck.length).toBe(74);
   });
 });

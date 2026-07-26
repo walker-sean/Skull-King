@@ -22,6 +22,9 @@ function lobbyWith(count: number): RoomState {
     currentTrick: null,
     trickLeader: null,
     alliances: [],
+    remainingDeck: [],
+    pendingPirateAbility: null,
+    pirateBets: [],
   };
 }
 

@@ -14,6 +14,12 @@ export function handSizeForRound(round: number, playerCount: number): number {
   return Math.min(round, handSizeCap(playerCount));
 }
 
+export interface DealtRound {
+  hands: Map<string, Card[]>;
+  /** Cards left undealt after every Player's hand is dealt (see Bendt the Bandit and Juanita Jade's Advanced Pirate Abilities). */
+  remainingDeck: Card[];
+}
+
 /**
  * Deals a fresh shuffle of the full Deck for the given Round, giving each named
  * Player a hand sized per `handSizeForRound`. Every Round reshuffles from scratch
@@ -22,7 +28,7 @@ export function handSizeForRound(round: number, playerCount: number): number {
 export function dealRound(
   playerNames: readonly string[],
   round: number,
-): Map<string, Card[]> {
+): DealtRound {
   const handSize = handSizeForRound(round, playerNames.length);
   const deck = shuffle(buildDeck());
 
@@ -31,5 +37,5 @@ export function dealRound(
     hands.set(name, deck.slice(index * handSize, (index + 1) * handSize));
   });
 
-  return hands;
+  return { hands, remainingDeck: deck.slice(playerNames.length * handSize) };
 }

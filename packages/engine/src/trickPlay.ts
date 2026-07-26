@@ -24,10 +24,13 @@ function rejected(
   };
 }
 
-function cardsEqual(a: Card, b: Card): boolean {
+export function cardsEqual(a: Card, b: Card): boolean {
   if (a.kind !== b.kind) return false;
   if (a.kind === "Suited" && b.kind === "Suited") {
     return a.suit === b.suit && a.rank === b.rank;
+  }
+  if (a.kind === "Pirate" && b.kind === "Pirate") {
+    return a.name === b.name;
   }
   return true;
 }
@@ -242,6 +245,13 @@ export function playCard(
     return rejected(state, command.roomCode, "BiddingIncomplete");
   }
 
+  // An unlocked Advanced Pirate Ability must take hold before the next Trick begins (see
+  // CONTEXT.md's Advanced Pirate Ability entry) — no further cards can be played until it's
+  // invoked.
+  if (state.pendingPirateAbility !== null) {
+    return rejected(state, command.roomCode, "PirateAbilityPending");
+  }
+
   const player = state.players.find(
     (candidate) => candidate.name === command.actorName,
   );
@@ -320,6 +330,7 @@ export function playCard(
           players,
           currentTrick: [],
           trickLeader: resolution.nextLeaderName,
+          pendingPirateAbility: null,
         },
         events,
       };
@@ -348,6 +359,23 @@ export function playCard(
       });
     }
 
+    // Winning a Trick by playing a named Pirate (not merely capturing a generic Pirate)
+    // unlocks that Pirate's Advanced Pirate Ability, usable only by the Player who won
+    // (see CONTEXT.md's Pirate and Advanced Pirate Ability entries).
+    const winningPlay = trick.find((play) => play.playerName === winnerName);
+    const pendingPirateAbility =
+      winningPlay !== undefined && winningPlay.card.kind === "Pirate"
+        ? { playerName: winnerName, pirateName: winningPlay.card.name }
+        : null;
+    if (pendingPirateAbility !== null) {
+      events.push({
+        type: "PirateAbilityUnlocked",
+        roomCode: command.roomCode,
+        playerName: pendingPirateAbility.playerName,
+        pirateName: pendingPirateAbility.pirateName,
+      });
+    }
+
     return {
       state: {
         ...state,
@@ -355,6 +383,7 @@ export function playCard(
         currentTrick: [],
         trickLeader: winnerName,
         alliances: [...state.alliances, ...newAlliances],
+        pendingPirateAbility,
       },
       events,
     };

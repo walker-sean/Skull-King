@@ -44,6 +44,9 @@ const lobbyState: RoomState = {
   currentTrick: null,
   trickLeader: null,
   alliances: [],
+  remainingDeck: [],
+  pendingPirateAbility: null,
+  pirateBets: [],
 };
 
 describe("App", () => {

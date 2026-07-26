@@ -1,4 +1,4 @@
-import type { Card } from "./card.js";
+import type { Card, PirateName } from "./card.js";
 import type { ScoringMode } from "./room.js";
 
 export type JoinRejectedReason =
@@ -106,7 +106,8 @@ export type PlayCardRejectedReason =
   | "NotYourTurn"
   | "CardNotInHand"
   | "MustFollowSuit"
-  | "InvalidTigressDeclaration";
+  | "InvalidTigressDeclaration"
+  | "PirateAbilityPending";
 
 export interface CardPlayedEvent {
   type: "CardPlayed";
@@ -150,6 +151,76 @@ export interface PlayCardRejectedEvent {
   reason: PlayCardRejectedReason;
 }
 
+/**
+ * Raised alongside TrickWon when the winning card was a named Pirate (see CONTEXT.md's
+ * Advanced Pirate Ability entry): only the winning Player may invoke it, before the next
+ * Trick begins.
+ */
+export interface PirateAbilityUnlockedEvent {
+  type: "PirateAbilityUnlocked";
+  roomCode: string;
+  playerName: string;
+  pirateName: PirateName;
+}
+
+export type InvokePirateAbilityRejectedReason =
+  | "RoomNotFound"
+  | "RoomNotActive"
+  | "PlayerNotFound"
+  | "NoAbilityPending"
+  | "NotYourAbility"
+  | "WrongPirateForEffect"
+  | "InvalidLeaderChoice"
+  | "InvalidBidAdjustment"
+  | "InvalidDiscard"
+  | "DeckExhausted";
+
+/** Raised when a Player's Bid changes via Harry the Giant's Advanced Pirate Ability. */
+export interface BidAdjustedEvent {
+  type: "BidAdjusted";
+  roomCode: string;
+  playerName: string;
+  bid: number;
+}
+
+/** Raised when the next Trick's leader changes via Rosie D'Laney's Advanced Pirate Ability. */
+export interface TrickLeaderChosenEvent {
+  type: "TrickLeaderChosen";
+  roomCode: string;
+  chosenLeaderName: string;
+}
+
+/** Raised when a Player draws and discards via Bendt the Bandit's Advanced Pirate Ability. */
+export interface CardsExchangedEvent {
+  type: "CardsExchanged";
+  roomCode: string;
+  playerName: string;
+  drawn: Card[];
+  discarded: Card[];
+}
+
+/** Raised when a Player places (or declines) a bet via Rascal of Roatan's Advanced Pirate Ability. */
+export interface BetPlacedEvent {
+  type: "BetPlaced";
+  roomCode: string;
+  playerName: string;
+  amount: 0 | 10 | 20;
+}
+
+/** Raised when a Player peeks at the undealt Deck via Juanita Jade's Advanced Pirate Ability. */
+export interface UndealtCardsRevealedEvent {
+  type: "UndealtCardsRevealed";
+  roomCode: string;
+  playerName: string;
+  cards: Card[];
+}
+
+export interface InvokePirateAbilityRejectedEvent {
+  type: "InvokePirateAbilityRejected";
+  roomCode: string;
+  reason: InvokePirateAbilityRejectedReason;
+}
+
 export type DomainEvent =
   | RoomCreatedEvent
   | RoomCreateRejectedEvent
@@ -167,11 +238,19 @@ export type DomainEvent =
   | PlayerReconnectedEvent
   | PlayerDisconnectedEvent
   | RoomPausedEvent
-  | RoomResumedEvent;
+  | RoomResumedEvent
+  | PirateAbilityUnlockedEvent
+  | BidAdjustedEvent
+  | TrickLeaderChosenEvent
+  | CardsExchangedEvent
+  | BetPlacedEvent
+  | UndealtCardsRevealedEvent
+  | InvokePirateAbilityRejectedEvent;
 
 export type RejectionEvent =
   | RoomCreateRejectedEvent
   | JoinRejectedEvent
   | StartGameRejectedEvent
   | SubmitBidRejectedEvent
-  | PlayCardRejectedEvent;
+  | PlayCardRejectedEvent
+  | InvokePirateAbilityRejectedEvent;

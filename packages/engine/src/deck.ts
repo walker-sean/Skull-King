@@ -1,6 +1,14 @@
-import type { Card, Suit } from "@skull-king/shared";
+import type { Card, PirateName, Suit } from "@skull-king/shared";
 
 const SUITS: Suit[] = ["Parrot", "TreasureChest", "PirateMap", "JollyRoger"];
+
+const PIRATE_NAMES: PirateName[] = [
+  "RosieDLaney",
+  "BendtTheBandit",
+  "RascalOfRoatan",
+  "JuanitaJade",
+  "HarryTheGiant",
+];
 
 /** The 74 cards in play for this project's ruleset (see CONTEXT.md's Deck glossary entry). */
 export const DECK_SIZE = 74;
@@ -14,7 +22,7 @@ export function buildDeck(): Card[] {
     }
   }
 
-  for (let i = 0; i < 5; i++) cards.push({ kind: "Pirate" });
+  for (const name of PIRATE_NAMES) cards.push({ kind: "Pirate", name });
   cards.push({ kind: "Tigress" });
   cards.push({ kind: "SkullKing" });
   for (let i = 0; i < 2; i++) cards.push({ kind: "Mermaid" });

@@ -31,6 +31,9 @@ function activeRoomWith(handSize: number, count: number): RoomState {
     currentTrick: [],
     trickLeader: players[0]?.name ?? null,
     alliances: [],
+    remainingDeck: [],
+    pendingPirateAbility: null,
+    pirateBets: [],
   };
 }
 

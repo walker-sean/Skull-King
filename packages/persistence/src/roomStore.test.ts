@@ -17,6 +17,9 @@ const lobbyRoom: RoomState = {
   currentTrick: null,
   trickLeader: null,
   alliances: [],
+  remainingDeck: [],
+  pendingPirateAbility: null,
+  pirateBets: [],
 };
 
 describe("RoomStore", () => {
@@ -70,6 +73,9 @@ describe("RoomStore", () => {
       currentTrick: [],
       trickLeader: "Alice",
       alliances: [],
+      remainingDeck: [],
+      pendingPirateAbility: null,
+      pirateBets: [],
     });
 
     expect(store.listNonCompletedRoomCodes()).toEqual(["ABCD"]);
@@ -88,6 +94,9 @@ describe("RoomStore", () => {
       currentTrick: [],
       trickLeader: "Alice",
       alliances: [],
+      remainingDeck: [],
+      pendingPirateAbility: null,
+      pirateBets: [],
     };
     store.saveRoom(completedRoom);
 

@@ -19,4 +19,13 @@ export const REJECTION_MESSAGES: Record<RejectionEvent["reason"], string> = {
   MustFollowSuit: "You must follow the led Suit if you can.",
   InvalidTigressDeclaration:
     "Declare the Tigress as a Pirate or an Escape before playing it.",
+  PirateAbilityPending:
+    "Invoke the unlocked Advanced Pirate Ability before the next Trick begins.",
+  NoAbilityPending: "There's no Advanced Pirate Ability to invoke right now.",
+  NotYourAbility: "Only the Player who won that Trick can invoke this ability.",
+  WrongPirateForEffect: "That effect doesn't match the unlocked ability.",
+  InvalidLeaderChoice: "Choose a Player in this Room to lead the next Trick.",
+  InvalidBidAdjustment: "That Bid adjustment isn't valid.",
+  InvalidDiscard: "Discard 2 cards you actually hold.",
+  DeckExhausted: "There aren't enough cards left in the Deck to draw.",
 };

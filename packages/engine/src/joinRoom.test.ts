@@ -14,6 +14,9 @@ function lobbyWithHost(): RoomState {
     currentTrick: null,
     trickLeader: null,
     alliances: [],
+    remainingDeck: [],
+    pendingPirateAbility: null,
+    pirateBets: [],
   };
 }
 
@@ -138,6 +141,9 @@ describe("joinRoom", () => {
       currentTrick: [],
       trickLeader: "Alice",
       alliances: [],
+      remainingDeck: [],
+      pendingPirateAbility: null,
+      pirateBets: [],
     };
 
     const result = joinRoom(room, {
@@ -177,6 +183,9 @@ describe("joinRoom", () => {
       currentTrick: [],
       trickLeader: "Alice",
       alliances: [],
+      remainingDeck: [],
+      pendingPirateAbility: null,
+      pirateBets: [],
     };
 
     const result = joinRoom(room, {
@@ -205,6 +214,9 @@ describe("joinRoom", () => {
       currentTrick: [],
       trickLeader: "Alice",
       alliances: [],
+      remainingDeck: [],
+      pendingPirateAbility: null,
+      pirateBets: [],
     };
 
     const result = joinRoom(room, {
@@ -245,6 +257,9 @@ describe("joinRoom", () => {
       currentTrick: [],
       trickLeader: "Alice",
       alliances: [],
+      remainingDeck: [],
+      pendingPirateAbility: null,
+      pirateBets: [],
     };
     const result = joinRoom(room, {
       type: "JoinRoom",

@@ -46,7 +46,7 @@ export function startGame(
     return rejected(state, command.roomCode, "TooManyPlayers");
   }
 
-  const hands = dealRound(
+  const { hands, remainingDeck } = dealRound(
     state.players.map((player) => player.name),
     FIRST_ROUND,
   );
@@ -64,6 +64,8 @@ export function startGame(
       currentTrick: [],
       trickLeader: state.players[0]?.name ?? null,
       players,
+      remainingDeck,
+      pendingPirateAbility: null,
     },
     events: [
       {

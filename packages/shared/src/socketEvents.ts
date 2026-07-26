@@ -1,4 +1,5 @@
 import type { Card } from "./card.js";
+import type { PirateAbilityEffect } from "./commands.js";
 import type { RoomState, ScoringMode } from "./room.js";
 import type { RejectionEvent } from "./events.js";
 
@@ -24,6 +25,11 @@ export interface SubmitBidRequest {
 export interface PlayCardRequest {
   roomCode: string;
   card: Card;
+}
+
+export interface InvokePirateAbilityRequest {
+  roomCode: string;
+  effect: PirateAbilityEffect;
 }
 
 export type CommandResponse =
@@ -52,6 +58,10 @@ export interface ClientToServerEvents {
   ) => void;
   playCard: (
     request: PlayCardRequest,
+    callback: (response: CommandResponse) => void,
+  ) => void;
+  invokePirateAbility: (
+    request: InvokePirateAbilityRequest,
     callback: (response: CommandResponse) => void,
   ) => void;
 }
