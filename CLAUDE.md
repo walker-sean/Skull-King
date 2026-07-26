@@ -16,4 +16,10 @@ Single-context layout — `CONTEXT.md` + `docs/adr/` at the repo root. See `docs
 
 ### README currency
 
-`README.md` is the project's front door (what it is, current status, setup steps) — kept separate from `CONTEXT.md` (domain language) and `docs/adr/` (decisions). Any change that alters setup/dev commands, adds or completes a major feature, or shifts overall project status must update `README.md` to match. Code review should flag a stale README the same way it flags any other undocumented standards violation.
+`README.md` is the project's front door (what it is, current status, setup steps) — kept separate from `CONTEXT.md` (domain language) and `docs/adr/` (decisions). It describes a snapshot of *current* state, not a changelog or a running history of work done — nothing about it is append-only.
+
+Any change that alters setup/dev commands, adds or completes a major feature, or shifts overall project status must update `README.md` to match by rewriting the relevant section from scratch as a short, scannable list (e.g. one bullet per subsystem). Freely cut, reword, reorder, or replace existing bullets — don't preserve old phrasing or tack a new clause onto an existing sentence just to avoid touching prior text. A bullet describing work that's since been superseded, merged into a bigger feature, or made obsolete should be rewritten or removed, not kept alongside its replacement.
+
+Keep the README to its front-door purpose only: what the project is, its current status, and how to set it up / run it. Rules-level detail belongs in `CONTEXT.md`, not the README — if a bullet starts explaining *how a rule works* rather than *that a feature exists*, move that detail to `CONTEXT.md` and link to it instead.
+
+Code review should flag a stale, run-on/bloated, changelog-shaped, or out-of-scope README the same way it flags any other undocumented standards violation.
