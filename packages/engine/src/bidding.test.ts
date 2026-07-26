@@ -36,6 +36,7 @@ function activeRoomWith(handSize: number, count: number): RoomState {
     remainingDeck: [],
     pendingPirateAbility: null,
     pirateBets: [],
+    cardBonuses: [],
   };
 }
 

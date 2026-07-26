@@ -56,6 +56,18 @@ export interface PirateBet {
   amount: 10 | 20;
 }
 
+/**
+ * Bonus points a Player earned by capturing specific cards in a Trick this Round (see
+ * CONTEXT.md's Bonus entry) — the Bonus Points table's numbered-14 and Mermaid–Pirate–Skull
+ * King capture-chain awards. Recorded per Trick so a multi-Trick Round can accumulate more
+ * than one.
+ */
+export interface CardBonus {
+  round: number;
+  playerName: string;
+  points: number;
+}
+
 export interface RoomState {
   roomCode: string;
   status: RoomStatus;
@@ -76,4 +88,6 @@ export interface RoomState {
   pendingPirateAbility: PendingPirateAbility | null;
   /** Every bet placed via Rascal of Roatan's ability so far this Game. */
   pirateBets: PirateBet[];
+  /** Every capture Bonus earned so far this Game, one entry per bonus-earning Trick. */
+  cardBonuses: CardBonus[];
 }

@@ -1,4 +1,5 @@
 import type { Alliance, Player, RoundScore } from "@skull-king/shared";
+import { allianceBonusByPlayer } from "./allianceBonus.js";
 import { handSizeForRound } from "./dealing.js";
 
 /**
@@ -27,30 +28,18 @@ export function scoreRound(
   alliances: readonly Alliance[],
 ): { players: Player[]; scores: RoundScore[] } {
   const cardsDealt = handSizeForRound(round, players.length);
-  const hitBid = new Map(
-    players.map((player) => [player.name, player.bid === player.tricksWon]),
+  const allianceBonusForRound = allianceBonusByPlayer(
+    round,
+    players,
+    alliances,
   );
-
-  const allianceBonusByPlayer = new Map<string, number>();
-  for (const alliance of alliances) {
-    if (alliance.round !== round) continue;
-    const bothHit =
-      hitBid.get(alliance.lootPlayerName) === true &&
-      hitBid.get(alliance.winnerName) === true;
-    if (!bothHit) continue;
-    for (const name of [alliance.lootPlayerName, alliance.winnerName]) {
-      allianceBonusByPlayer.set(
-        name,
-        (allianceBonusByPlayer.get(name) ?? 0) + 20,
-      );
-    }
-  }
 
   const scores: RoundScore[] = players.map((player) => {
     const points = bidPoints(player.bid ?? 0, player.tricksWon, cardsDealt);
-    const allianceBonus = allianceBonusByPlayer.get(player.name) ?? 0;
+    const allianceBonus = allianceBonusForRound.get(player.name) ?? 0;
     const roundPoints = points + allianceBonus;
     return {
+      scoringMode: "Traditional",
       playerName: player.name,
       bidPoints: points,
       allianceBonus,

@@ -1,5 +1,6 @@
 import type {
   Card,
+  CardBonus,
   DomainEvent,
   EngineResult,
   Player,
@@ -11,7 +12,9 @@ import type {
   TrickVoidingCard,
 } from "@skull-king/shared";
 import { areAllBidsSubmitted } from "./bidding.js";
+import { captureBonusPoints } from "./bonusPoints.js";
 import { scoreRound } from "./scoring.js";
+import { scoreRascalRound } from "./rascalScoring.js";
 
 const TRUMP_SUIT: Suit = "JollyRoger";
 
@@ -235,13 +238,28 @@ function resolveTrick(trick: readonly TrickPlay[]): TrickResolution {
  */
 function withRoundScoring(
   round: number,
+  scoringMode: RoomState["scoringMode"],
   alliances: RoomState["alliances"],
+  cardBonuses: RoomState["cardBonuses"],
+  pirateBets: RoomState["pirateBets"],
   roomCode: string,
   players: Player[],
   events: DomainEvent[],
 ): Player[] {
   if (!players.every((player) => player.hand.length === 0)) {
     return players;
+  }
+
+  if (scoringMode === "Rascal") {
+    const { players: scoredPlayers, scores } = scoreRascalRound(
+      round,
+      players,
+      alliances,
+      cardBonuses,
+      pirateBets,
+    );
+    events.push({ type: "RoundScored", roomCode, round, scores });
+    return scoredPlayers;
   }
 
   const { players: scoredPlayers, scores } = scoreRound(
@@ -354,7 +372,10 @@ export function playCard(
       });
       const finalPlayers = withRoundScoring(
         state.currentRound ?? 0,
+        state.scoringMode,
         state.alliances,
+        state.cardBonuses,
+        state.pirateBets,
         command.roomCode,
         players,
         events,
@@ -419,9 +440,21 @@ export function playCard(
       });
     }
 
+    // Whoever wins the Trick captures every card in it, earning any Bonus points those
+    // cards are worth (see CONTEXT.md's Bonus entry) — tracked per Round so Rascal Scoring
+    // can split it by Outcome once the Round ends.
+    const bonusPoints = captureBonusPoints(trick, winnerName);
+    const newCardBonuses: CardBonus[] =
+      bonusPoints === 0
+        ? []
+        : [{ round: state.currentRound ?? 0, playerName: winnerName, points: bonusPoints }];
+
     const finalPlayers = withRoundScoring(
       state.currentRound ?? 0,
+      state.scoringMode,
       [...state.alliances, ...newAlliances],
+      [...state.cardBonuses, ...newCardBonuses],
+      state.pirateBets,
       command.roomCode,
       playersAfterTrick,
       events,
@@ -434,6 +467,7 @@ export function playCard(
         currentTrick: [],
         trickLeader: winnerName,
         alliances: [...state.alliances, ...newAlliances],
+        cardBonuses: [...state.cardBonuses, ...newCardBonuses],
         pendingPirateAbility,
       },
       events,

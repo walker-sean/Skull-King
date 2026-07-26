@@ -10,3 +10,5 @@ export * from "./bidding.js";
 export * from "./trickPlay.js";
 export * from "./pirateAbility.js";
 export * from "./scoring.js";
+export * from "./bonusPoints.js";
+export * from "./rascalScoring.js";

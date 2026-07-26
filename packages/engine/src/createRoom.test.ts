@@ -31,6 +31,7 @@ describe("createRoom", () => {
       remainingDeck: [],
       pendingPirateAbility: null,
       pirateBets: [],
+      cardBonuses: [],
     });
     expect(result.events).toEqual([
       { type: "RoomCreated", roomCode: "ABCD", hostName: "Alice" },

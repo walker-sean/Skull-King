@@ -33,6 +33,7 @@ function roomWithPendingAbility(
     remainingDeck,
     pendingPirateAbility: { playerName: winnerName, pirateName },
     pirateBets: [],
+    cardBonuses: [],
   };
 }
 

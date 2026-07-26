@@ -221,12 +221,34 @@ export interface InvokePirateAbilityRejectedEvent {
   reason: InvokePirateAbilityRejectedReason;
 }
 
-/** One Player's points breakdown for a just-scored Round (see the Scoresheet in docs/rules/rulebook.md). */
+/** One Player's points breakdown for a just-scored Round under Traditional Scoring (see the Scoresheet in docs/rules/rulebook.md). */
 export interface RoundScore {
+  scoringMode: "Traditional";
   playerName: string;
   bidPoints: number;
   allianceBonus: number;
   /** bidPoints + allianceBonus. */
+  roundPoints: number;
+  /** This Player's running score total after this Round, including every prior Round. */
+  totalScore: number;
+}
+
+/** The three Bid-accuracy results Rascal Scoring uses (see CONTEXT.md's Outcome entry). */
+export type Outcome = "DirectHit" | "GlancingBlow" | "CompleteMiss";
+
+/** One Player's points breakdown for a just-scored Round under Rascal Scoring (see docs/rules/rascal-scoring.md). */
+export interface RascalRoundScore {
+  scoringMode: "Rascal";
+  playerName: string;
+  outcome: Outcome;
+  /** This Player's share (per Outcome) of the Round's potential score. */
+  bidPoints: number;
+  /** This Player's share (per Outcome) of the capture Bonus they earned this Round. */
+  bonusPoints: number;
+  allianceBonus: number;
+  /** The Rascal of Roatan bet amount won (positive) or lost (negative) this Round, if any. */
+  betResult: number;
+  /** bidPoints + bonusPoints + allianceBonus + betResult. */
   roundPoints: number;
   /** This Player's running score total after this Round, including every prior Round. */
   totalScore: number;
@@ -241,7 +263,7 @@ export interface RoundScoredEvent {
   type: "RoundScored";
   roomCode: string;
   round: number;
-  scores: RoundScore[];
+  scores: RoundScore[] | RascalRoundScore[];
 }
 
 export type DomainEvent =
