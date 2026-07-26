@@ -103,7 +103,7 @@ export interface RoomState {
   /** Every capture Bonus earned so far this Game, one entry per bonus-earning Trick. */
   cardBonuses: CardBonus[];
   /** Every scored Round's full points breakdown so far this Game, in Round order. */
-  roundScores: (RoundScore | RascalRoundScore)[];
+  roundScores: RoundScore[] | RascalRoundScore[];
   /** The undealt Deck peeked at via Juanita Jade's ability, awaiting delivery; null otherwise. */
   pendingReveal: PendingReveal | null;
 }

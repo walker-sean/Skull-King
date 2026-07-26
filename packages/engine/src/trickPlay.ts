@@ -246,13 +246,18 @@ type RoundScoringResult = RoundAdvanceResult & {
   roundScores: RoomState["roundScores"];
 };
 
+/** The per-Round accumulator fields withRoundScoring folds a just-finished Round's outcome into. */
+interface RoundAccumulators {
+  alliances: RoomState["alliances"];
+  cardBonuses: RoomState["cardBonuses"];
+  pirateBets: RoomState["pirateBets"];
+  roundScores: RoomState["roundScores"];
+}
+
 function withRoundScoring(
   round: number,
   scoringMode: RoomState["scoringMode"],
-  alliances: RoomState["alliances"],
-  cardBonuses: RoomState["cardBonuses"],
-  pirateBets: RoomState["pirateBets"],
-  roundScores: RoomState["roundScores"],
+  accumulators: RoundAccumulators,
   roomCode: string,
   players: Player[],
   trickInProgress: {
@@ -261,6 +266,8 @@ function withRoundScoring(
   },
   events: DomainEvent[],
 ): RoundScoringResult {
+  const { alliances, cardBonuses, pirateBets, roundScores } = accumulators;
+
   if (!players.every((player) => player.hand.length === 0)) {
     return {
       players,
@@ -282,7 +289,12 @@ function withRoundScoring(
   if (advanced.status === "Completed") {
     events.push({ type: "GameCompleted", roomCode });
   }
-  return { ...advanced, roundScores: [...roundScores, ...scores] };
+  // scores and roundScores are always both-Traditional or both-Rascal for a Game's lifetime
+  // (scoringMode is fixed once the Game starts), even though the union type can't express that.
+  return {
+    ...advanced,
+    roundScores: [...roundScores, ...scores] as RoomState["roundScores"],
+  };
 }
 
 /** The RoomState fields a just-finished Trick's round-end outcome patches onto state. */
@@ -399,10 +411,12 @@ export function playCard(
       const roundEnd = withRoundScoring(
         state.currentRound ?? 0,
         state.scoringMode,
-        state.alliances,
-        state.cardBonuses,
-        state.pirateBets,
-        state.roundScores,
+        {
+          alliances: state.alliances,
+          cardBonuses: state.cardBonuses,
+          pirateBets: state.pirateBets,
+          roundScores: state.roundScores,
+        },
         command.roomCode,
         players,
         {
@@ -489,10 +503,12 @@ export function playCard(
     const roundEnd = withRoundScoring(
       state.currentRound ?? 0,
       state.scoringMode,
-      [...state.alliances, ...newAlliances],
-      [...state.cardBonuses, ...newCardBonuses],
-      state.pirateBets,
-      state.roundScores,
+      {
+        alliances: [...state.alliances, ...newAlliances],
+        cardBonuses: [...state.cardBonuses, ...newCardBonuses],
+        pirateBets: state.pirateBets,
+        roundScores: state.roundScores,
+      },
       command.roomCode,
       playersAfterTrick,
       { trickLeader: winnerName, remainingDeck: state.remainingDeck },
