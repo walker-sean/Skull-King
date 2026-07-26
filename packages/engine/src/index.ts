@@ -7,6 +7,7 @@ export * from "./startGame.js";
 export * from "./deck.js";
 export * from "./dealing.js";
 export * from "./bidding.js";
+export * from "./roundAdvance.js";
 export * from "./trickPlay.js";
 export * from "./pirateAbility.js";
 export * from "./scoring.js";

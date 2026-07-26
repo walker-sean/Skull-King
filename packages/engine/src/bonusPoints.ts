@@ -46,8 +46,7 @@ export function captureBonusPoints(
   }
 
   if (isPirateLike(winningPlay.card)) {
-    points +=
-      trick.filter((play) => play.card.kind === "Mermaid").length * 20;
+    points += trick.filter((play) => play.card.kind === "Mermaid").length * 20;
   }
 
   if (winningPlay.card.kind === "SkullKing") {

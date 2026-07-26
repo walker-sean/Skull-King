@@ -13,6 +13,7 @@ import type {
 } from "@skull-king/shared";
 import { areAllBidsSubmitted } from "./bidding.js";
 import { captureBonusPoints } from "./bonusPoints.js";
+import { advanceRound, type RoundAdvanceResult } from "./roundAdvance.js";
 import { scoreRound } from "./scoring.js";
 import { scoreRascalRound } from "./rascalScoring.js";
 
@@ -232,9 +233,13 @@ function resolveTrick(trick: readonly TrickPlay[]): TrickResolution {
 
 /**
  * Once every Player's hand is empty, the Round in progress is over: scores it under the
- * Game's Scoring Mode (see CONTEXT.md's Scoring Mode entry) and folds the result into each
- * Player's running total, raising RoundScored alongside whatever Trick-level events already
- * fired. Otherwise the Round continues unchanged — no scoring happens mid-Round.
+ * Game's Scoring Mode (see CONTEXT.md's Scoring Mode entry), folds the result into each
+ * Player's running total, and either deals the next Round fresh or — once Round 10 is
+ * scored — moves the Room to Completed (see roundAdvance's advanceRound). Raises
+ * RoundScored (and GameCompleted, once the Game is over) alongside whatever Trick-level
+ * events already fired. Otherwise the Round continues unchanged — no scoring or
+ * advancement happens mid-Round, and the Trick in progress's leader/undealt Deck pass
+ * through untouched.
  */
 function withRoundScoring(
   round: number,
@@ -244,31 +249,44 @@ function withRoundScoring(
   pirateBets: RoomState["pirateBets"],
   roomCode: string,
   players: Player[],
+  trickInProgress: {
+    trickLeader: string;
+    remainingDeck: RoomState["remainingDeck"];
+  },
   events: DomainEvent[],
-): Player[] {
+): RoundAdvanceResult {
   if (!players.every((player) => player.hand.length === 0)) {
-    return players;
-  }
-
-  if (scoringMode === "Rascal") {
-    const { players: scoredPlayers, scores } = scoreRascalRound(
-      round,
+    return {
       players,
-      alliances,
-      cardBonuses,
-      pirateBets,
-    );
-    events.push({ type: "RoundScored", roomCode, round, scores });
-    return scoredPlayers;
+      currentRound: round,
+      status: "Active",
+      trickLeader: trickInProgress.trickLeader,
+      remainingDeck: trickInProgress.remainingDeck,
+    };
   }
 
-  const { players: scoredPlayers, scores } = scoreRound(
-    round,
-    players,
-    alliances,
-  );
+  const { players: scoredPlayers, scores } =
+    scoringMode === "Rascal"
+      ? scoreRascalRound(round, players, alliances, cardBonuses, pirateBets)
+      : scoreRound(round, players, alliances);
   events.push({ type: "RoundScored", roomCode, round, scores });
-  return scoredPlayers;
+
+  const advanced = advanceRound(round, scoredPlayers);
+  if (advanced.status === "Completed") {
+    events.push({ type: "GameCompleted", roomCode });
+  }
+  return advanced;
+}
+
+/** The RoomState fields a just-finished Trick's round-end outcome patches onto state. */
+function applyRoundEnd(roundEnd: RoundAdvanceResult) {
+  return {
+    players: roundEnd.players,
+    currentRound: roundEnd.currentRound,
+    status: roundEnd.status,
+    trickLeader: roundEnd.trickLeader,
+    remainingDeck: roundEnd.remainingDeck,
+  };
 }
 
 export function playCard(
@@ -370,7 +388,7 @@ export function playCard(
         voidedBy: resolution.voidedBy,
         nextLeaderName: resolution.nextLeaderName,
       });
-      const finalPlayers = withRoundScoring(
+      const roundEnd = withRoundScoring(
         state.currentRound ?? 0,
         state.scoringMode,
         state.alliances,
@@ -378,14 +396,17 @@ export function playCard(
         state.pirateBets,
         command.roomCode,
         players,
+        {
+          trickLeader: resolution.nextLeaderName,
+          remainingDeck: state.remainingDeck,
+        },
         events,
       );
       return {
         state: {
           ...state,
-          players: finalPlayers,
+          ...applyRoundEnd(roundEnd),
           currentTrick: [],
-          trickLeader: resolution.nextLeaderName,
           pendingPirateAbility: null,
         },
         events,
@@ -447,9 +468,15 @@ export function playCard(
     const newCardBonuses: CardBonus[] =
       bonusPoints === 0
         ? []
-        : [{ round: state.currentRound ?? 0, playerName: winnerName, points: bonusPoints }];
+        : [
+            {
+              round: state.currentRound ?? 0,
+              playerName: winnerName,
+              points: bonusPoints,
+            },
+          ];
 
-    const finalPlayers = withRoundScoring(
+    const roundEnd = withRoundScoring(
       state.currentRound ?? 0,
       state.scoringMode,
       [...state.alliances, ...newAlliances],
@@ -457,15 +484,15 @@ export function playCard(
       state.pirateBets,
       command.roomCode,
       playersAfterTrick,
+      { trickLeader: winnerName, remainingDeck: state.remainingDeck },
       events,
     );
 
     return {
       state: {
         ...state,
-        players: finalPlayers,
+        ...applyRoundEnd(roundEnd),
         currentTrick: [],
-        trickLeader: winnerName,
         alliances: [...state.alliances, ...newAlliances],
         cardBonuses: [...state.cardBonuses, ...newCardBonuses],
         pendingPirateAbility,

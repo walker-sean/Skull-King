@@ -67,7 +67,9 @@ export function scoreRascalRound(
     const bidPoints = potential * share;
 
     const bonusPotential = cardBonuses
-      .filter((bonus) => bonus.round === round && bonus.playerName === player.name)
+      .filter(
+        (bonus) => bonus.round === round && bonus.playerName === player.name,
+      )
       .reduce((sum, bonus) => sum + bonus.points, 0);
     const bonusPoints = bonusPotential * share;
 

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { Alliance, CardBonus, Player, PirateBet } from "@skull-king/shared";
+import type {
+  Alliance,
+  CardBonus,
+  Player,
+  PirateBet,
+} from "@skull-king/shared";
 import { classifyOutcome, scoreRascalRound } from "./rascalScoring.js";
 
 function playerWith(
@@ -38,7 +43,13 @@ describe("classifyOutcome", () => {
 
 describe("scoreRascalRound", () => {
   it("awards the full potential (10 per card dealt) on a Direct Hit", () => {
-    const { scores } = scoreRascalRound(5, [playerWith("Harry", 2, 2)], [], [], []);
+    const { scores } = scoreRascalRound(
+      5,
+      [playerWith("Harry", 2, 2)],
+      [],
+      [],
+      [],
+    );
 
     expect(scores).toEqual([
       {
@@ -98,7 +109,9 @@ describe("scoreRascalRound", () => {
   });
 
   it("splits Bonus points by the same Outcome share as Round points", () => {
-    const cardBonuses: CardBonus[] = [{ round: 3, playerName: "Anne", points: 40 }];
+    const cardBonuses: CardBonus[] = [
+      { round: 3, playerName: "Anne", points: 40 },
+    ];
 
     const direct = scoreRascalRound(
       3,

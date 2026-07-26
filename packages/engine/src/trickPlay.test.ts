@@ -704,14 +704,16 @@ describe("playCard", () => {
   });
 
   describe("Advanced Cards: Loot/Alliance, Kraken, White Whale", () => {
+    // Every hand keeps a spare, unplayed card so this single Trick doesn't also empty
+    // every hand and trigger Round-end/advancement — that's covered separately below.
     function playFullTrick(playerHands: [string, Card][]): {
       result: ReturnType<typeof playCard>;
       room: RoomState;
     } {
       const players = playerHands.map(([name, card], index) =>
-        playerWith(name, [card], index === 0),
+        playerWith(name, [card, { kind: "Escape" }], index === 0),
       );
-      let room = activeRoom(players);
+      let room: RoomState = { ...activeRoom(players), currentRound: 1 };
       let result = playCard(room, {
         type: "PlayCard",
         roomCode: "ABCD",
@@ -1162,6 +1164,81 @@ describe("playCard", () => {
           }),
         );
       });
+    });
+
+    it("deals a fresh hand for the next Round and resets Bid/Tricks Won once it's scored, carrying score forward", () => {
+      const players = [
+        {
+          ...playerWith("Alice", [suited("Parrot", 5)], true),
+          bid: 1,
+          score: 40,
+        },
+        { ...playerWith("Bob", [suited("Parrot", 2)]), bid: 0, score: 10 },
+      ];
+      const room = { ...activeRoom(players), currentRound: 3 };
+
+      const afterAlice = playCard(room, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 5),
+        actorName: "Alice",
+      });
+      const final = playCard(afterAlice.state as RoomState, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 2),
+        actorName: "Bob",
+      });
+
+      expect(final.state?.status).toBe("Active");
+      expect(final.state?.currentRound).toBe(4);
+      for (const player of final.state?.players ?? []) {
+        expect(player.bid).toBeNull();
+        expect(player.tricksWon).toBe(0);
+        expect(player.hand).toHaveLength(4);
+      }
+      expect(final.state?.players.find((p) => p.name === "Alice")?.score).toBe(
+        60,
+      );
+      expect(final.state?.players.find((p) => p.name === "Bob")?.score).toBe(
+        40,
+      );
+    });
+
+    it("moves the Room to Completed and raises GameCompleted once Round 10 is scored", () => {
+      const players = [
+        {
+          ...playerWith("Alice", [suited("Parrot", 5)], true),
+          bid: 1,
+          score: 100,
+        },
+        { ...playerWith("Bob", [suited("Parrot", 2)]), bid: 0, score: 80 },
+      ];
+      const room = { ...activeRoom(players), currentRound: 10 };
+
+      const afterAlice = playCard(room, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 5),
+        actorName: "Alice",
+      });
+      const final = playCard(afterAlice.state as RoomState, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 2),
+        actorName: "Bob",
+      });
+
+      expect(final.state?.status).toBe("Completed");
+      expect(final.state?.currentRound).toBe(10);
+      expect(final.state?.trickLeader).toBeNull();
+      expect(final.events).toContainEqual({
+        type: "GameCompleted",
+        roomCode: "ABCD",
+      });
+      for (const player of final.state?.players ?? []) {
+        expect(player.hand).toEqual([]);
+      }
     });
   });
 

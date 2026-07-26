@@ -266,6 +266,16 @@ export interface RoundScoredEvent {
   scores: RoundScore[] | RascalRoundScore[];
 }
 
+/**
+ * Raised alongside the final RoundScoredEvent (Round 10) once the Room moves to
+ * Completed status (see CONTEXT.md's Room Status entry) with the final scoreboard —
+ * every Player's totalScore in that RoundScoredEvent — settled.
+ */
+export interface GameCompletedEvent {
+  type: "GameCompleted";
+  roomCode: string;
+}
+
 export type DomainEvent =
   | RoomCreatedEvent
   | RoomCreateRejectedEvent
@@ -291,7 +301,8 @@ export type DomainEvent =
   | BetPlacedEvent
   | UndealtCardsRevealedEvent
   | InvokePirateAbilityRejectedEvent
-  | RoundScoredEvent;
+  | RoundScoredEvent
+  | GameCompletedEvent;
 
 export type RejectionEvent =
   | RoomCreateRejectedEvent
