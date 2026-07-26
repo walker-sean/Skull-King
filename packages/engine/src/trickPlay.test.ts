@@ -6,7 +6,12 @@ import type {
   Suit,
   TrickPlay,
 } from "@skull-king/shared";
-import { currentTurnPlayerName, legalPlays, playCard } from "./trickPlay.js";
+import {
+  currentTurnPlayerName,
+  legalPlays,
+  playCard,
+  trickCaptureReason,
+} from "./trickPlay.js";
 
 function suited(suit: Suit, rank: number): Card {
   return { kind: "Suited", suit, rank };
@@ -1478,6 +1483,203 @@ describe("playCard", () => {
           reason: "PirateAbilityPending",
         },
       ]);
+    });
+  });
+});
+
+describe("trickCaptureReason", () => {
+  function trick(...plays: Array<[string, Card]>): TrickPlay[] {
+    return plays.map(([playerName, card]) => ({ playerName, card }));
+  }
+
+  it("reports HighestTrump when the Trump Suit beats every other Suit regardless of number", () => {
+    const fact = trickCaptureReason(
+      trick(
+        ["Alice", suited("Parrot", 14)],
+        ["Bob", suited("JollyRoger", 1)],
+        ["Carol", suited("TreasureChest", 10)],
+      ),
+    );
+
+    expect(fact).toEqual({
+      outcome: "Captured",
+      kind: "HighestTrump",
+      winnerName: "Bob",
+    });
+  });
+
+  it("reports HighestLead for the highest-numbered card following the led Suit when no Trump was played", () => {
+    const fact = trickCaptureReason(
+      trick(
+        ["Alice", suited("Parrot", 5)],
+        ["Bob", suited("TreasureChest", 12)],
+        ["Carol", suited("Parrot", 9)],
+      ),
+    );
+
+    expect(fact).toEqual({
+      outcome: "Captured",
+      kind: "HighestLead",
+      winnerName: "Carol",
+    });
+  });
+
+  it("reports Escape when only Escapes (and a Tigress declared as one) were played, earliest wins", () => {
+    const fact = trickCaptureReason(
+      trick(
+        ["Alice", { kind: "Escape" }],
+        ["Bob", { kind: "Tigress", declaredAs: "Escape" }],
+      ),
+    );
+
+    expect(fact).toEqual({
+      outcome: "Captured",
+      kind: "Escape",
+      winnerName: "Alice",
+    });
+  });
+
+  it("reports Loot when every other card is an Escape, since Loot ranks just above Escape", () => {
+    const fact = trickCaptureReason(
+      trick(["Alice", { kind: "Escape" }], ["Bob", { kind: "Loot" }]),
+    );
+
+    expect(fact).toEqual({
+      outcome: "Captured",
+      kind: "Loot",
+      winnerName: "Bob",
+    });
+  });
+
+  it("reports Pirate when a Pirate (or a Tigress declared as one) beats every Suited card", () => {
+    const fact = trickCaptureReason(
+      trick(
+        ["Alice", suited("JollyRoger", 14)],
+        ["Bob", { kind: "Tigress", declaredAs: "Pirate" }],
+      ),
+    );
+
+    expect(fact).toEqual({
+      outcome: "Captured",
+      kind: "Pirate",
+      winnerName: "Bob",
+    });
+  });
+
+  it("reports SkullKing when the Skull King beats every Pirate", () => {
+    const fact = trickCaptureReason(
+      trick(
+        ["Alice", { kind: "Pirate", name: "RosieDLaney" }],
+        ["Bob", { kind: "SkullKing" }],
+      ),
+    );
+
+    expect(fact).toEqual({
+      outcome: "Captured",
+      kind: "SkullKing",
+      winnerName: "Bob",
+    });
+  });
+
+  it("reports plain Mermaid when it wins without a Pirate or the Skull King in the Trick", () => {
+    const fact = trickCaptureReason(
+      trick(["Alice", suited("JollyRoger", 14)], ["Bob", { kind: "Mermaid" }]),
+    );
+
+    expect(fact).toEqual({
+      outcome: "Captured",
+      kind: "Mermaid",
+      winnerName: "Bob",
+    });
+  });
+
+  it("reports MermaidOverPirate when a Mermaid beats a Pirate, regardless of play order", () => {
+    const fact = trickCaptureReason(
+      trick(
+        ["Alice", { kind: "Mermaid" }],
+        ["Bob", { kind: "Pirate", name: "RosieDLaney" }],
+      ),
+    );
+
+    expect(fact).toEqual({
+      outcome: "Captured",
+      kind: "MermaidOverPirate",
+      winnerName: "Alice",
+    });
+  });
+
+  it("reports MermaidOverSkullKing when a Mermaid beats the Skull King, regardless of play order", () => {
+    const fact = trickCaptureReason(
+      trick(
+        ["Alice", { kind: "SkullKing" }],
+        ["Bob", { kind: "Mermaid" }],
+        ["Carol", { kind: "Pirate", name: "RosieDLaney" }],
+      ),
+    );
+
+    expect(fact).toEqual({
+      outcome: "Captured",
+      kind: "MermaidOverSkullKing",
+      winnerName: "Bob",
+    });
+  });
+
+  it("reports a Kraken-voided Trick distinctly, without a winner or numbered capture reason", () => {
+    const fact = trickCaptureReason(
+      trick(["Alice", { kind: "Kraken" }], ["Bob", { kind: "SkullKing" }]),
+    );
+
+    expect(fact).toEqual({ outcome: "Voided", voidedBy: "Kraken" });
+  });
+
+  it("reports a Trick as WhiteWhaleHighestNumber when a White Whale strips every card's identity", () => {
+    const fact = trickCaptureReason(
+      trick(
+        ["Alice", { kind: "SkullKing" }],
+        ["Bob", suited("Parrot", 9)],
+        ["Carol", { kind: "WhiteWhale" }],
+      ),
+    );
+
+    expect(fact).toEqual({
+      outcome: "Captured",
+      kind: "WhiteWhaleHighestNumber",
+      winnerName: "Bob",
+    });
+  });
+
+  it("reports a White-Whale-voided Trick distinctly when no Suited card was played at all", () => {
+    const fact = trickCaptureReason(
+      trick(
+        ["Alice", { kind: "SkullKing" }],
+        ["Bob", { kind: "WhiteWhale" }],
+      ),
+    );
+
+    expect(fact).toEqual({ outcome: "Voided", voidedBy: "WhiteWhale" });
+  });
+
+  it("lets whichever of Kraken/White Whale was played second override the other", () => {
+    const krakenLast = trickCaptureReason(
+      trick(
+        ["Alice", { kind: "WhiteWhale" }],
+        ["Bob", { kind: "Kraken" }],
+        ["Carol", suited("Parrot", 9)],
+      ),
+    );
+    expect(krakenLast).toEqual({ outcome: "Voided", voidedBy: "Kraken" });
+
+    const whaleLast = trickCaptureReason(
+      trick(
+        ["Alice", { kind: "Kraken" }],
+        ["Bob", suited("Parrot", 9)],
+        ["Carol", { kind: "WhiteWhale" }],
+      ),
+    );
+    expect(whaleLast).toEqual({
+      outcome: "Captured",
+      kind: "WhiteWhaleHighestNumber",
+      winnerName: "Bob",
     });
   });
 });
