@@ -13,7 +13,7 @@ export function LobbyScreen({ view, error, onStartGame }: LobbyScreenProps) {
   const [scoringMode, setScoringMode] = useState<ScoringMode>("Traditional");
 
   return (
-    <div>
+    <div className="screen">
       <h1>
         Room <span>{view.roomCode}</span>
       </h1>

@@ -53,7 +53,7 @@ export function TrickPlayScreen({
   }
 
   return (
-    <div>
+    <div className="screen">
       <h1>Round {view.currentRound}</h1>
 
       {view.outcome && (
@@ -71,7 +71,7 @@ export function TrickPlayScreen({
       </p>
 
       <h2>Trick in progress</h2>
-      <ul>
+      <ul className="card-grid">
         {view.currentTrick.map((play, index) => (
           <li key={`${play.playerName}-${index}`}>
             {play.playerName}
@@ -85,7 +85,7 @@ export function TrickPlayScreen({
       <h2>Your hand</h2>
       {/* Disabled while any Advanced Pirate Ability is pending — the server already
           rejects PlayCard with PirateAbilityPending until it's invoked. */}
-      <ul>
+      <ul className="card-grid">
         {view.hand.map((entry, index) => (
           <li key={index}>
             <button
@@ -107,20 +107,22 @@ export function TrickPlayScreen({
       {decliningTigress && (
         <section>
           <p>Play the Tigress as:</p>
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={() => declareTigress("Pirate")}
-          >
-            Play as Pirate
-          </button>
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={() => declareTigress("Escape")}
-          >
-            Play as Escape
-          </button>
+          <div className="button-row">
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => declareTigress("Pirate")}
+            >
+              Play as Pirate
+            </button>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => declareTigress("Escape")}
+            >
+              Play as Escape
+            </button>
+          </div>
         </section>
       )}
 
@@ -144,7 +146,7 @@ export function TrickPlayScreen({
       {peekedCards && (
         <section>
           <h2>Undealt cards you peeked at</h2>
-          <ul>
+          <ul className="card-grid">
             {peekedCards.map((card, index) => (
               <li key={index}>{cardLabel(card)}</li>
             ))}

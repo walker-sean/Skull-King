@@ -17,7 +17,7 @@ export function BiddingScreen({
   const [bid, setBid] = useState(0);
 
   return (
-    <div>
+    <div className="screen">
       <h1>Round {view.currentRound}</h1>
       <p>Your hand has {view.handSize} card(s).</p>
 

@@ -16,6 +16,7 @@ Early development — the full game loop is implemented end-to-end:
 - **Advanced Pirate Abilities**: each of the 5 named Pirates unlocks a one-time ability for whoever wins a Trick with them
 - **Scoring**: both Traditional and Rascal Scoring Modes, Alliance bonuses, running totals
 - **Game completion**: Round-to-Round advancement and Completed status with final scoreboard after Round 10
+- **Mobile-first UI**: every screen laid out for phone-sized viewports with touch-friendly tap targets
 
 See [CONTEXT.md](CONTEXT.md) for the precise rules behind each of these.
 

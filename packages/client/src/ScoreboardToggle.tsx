@@ -8,7 +8,7 @@ export function ScoreboardToggle({
   onToggle,
 }: ScoreboardToggleProps) {
   return (
-    <button onClick={onToggle}>
+    <button className="scoreboard-toggle" onClick={onToggle}>
       {showingScoreboard ? "Back to Game" : "Scoreboard"}
     </button>
   );

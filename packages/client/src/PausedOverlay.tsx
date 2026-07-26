@@ -6,7 +6,7 @@ export interface PausedOverlayProps {
 
 export function PausedOverlay({ disconnectedPlayers }: PausedOverlayProps) {
   return (
-    <section role="status">
+    <section role="status" className="paused-overlay">
       <h2>Game Paused</h2>
       <p>Waiting for the following Player(s) to reconnect:</p>
       <ul>

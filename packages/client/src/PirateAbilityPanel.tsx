@@ -75,30 +75,32 @@ function HarryTheGiantForm({
   return (
     <>
       <p>Current Bid: {currentBid}</p>
-      <button
-        type="button"
-        aria-pressed={bidAdjustment === -1}
-        disabled={disabled || !isValidBidAdjustment(currentBid, view.handSize, -1)}
-        onClick={() => setBidAdjustment(-1)}
-      >
-        -1
-      </button>
-      <button
-        type="button"
-        aria-pressed={bidAdjustment === 0}
-        disabled={disabled}
-        onClick={() => setBidAdjustment(0)}
-      >
-        0
-      </button>
-      <button
-        type="button"
-        aria-pressed={bidAdjustment === 1}
-        disabled={disabled || !isValidBidAdjustment(currentBid, view.handSize, 1)}
-        onClick={() => setBidAdjustment(1)}
-      >
-        +1
-      </button>
+      <div className="button-row">
+        <button
+          type="button"
+          aria-pressed={bidAdjustment === -1}
+          disabled={disabled || !isValidBidAdjustment(currentBid, view.handSize, -1)}
+          onClick={() => setBidAdjustment(-1)}
+        >
+          -1
+        </button>
+        <button
+          type="button"
+          aria-pressed={bidAdjustment === 0}
+          disabled={disabled}
+          onClick={() => setBidAdjustment(0)}
+        >
+          0
+        </button>
+        <button
+          type="button"
+          aria-pressed={bidAdjustment === 1}
+          disabled={disabled || !isValidBidAdjustment(currentBid, view.handSize, 1)}
+          onClick={() => setBidAdjustment(1)}
+        >
+          +1
+        </button>
+      </div>
       <p>New Bid: {newBid}</p>
       <button
         type="button"
@@ -137,7 +139,7 @@ function BendtTheBanditForm({
   return (
     <>
       <p>Choose 2 cards to discard</p>
-      <ul>
+      <ul className="card-grid">
         {view.hand.map((card, index) => (
           <li key={index}>
             <button
@@ -180,16 +182,18 @@ function RascalOfRoatanForm({
   return (
     <>
       <p>Place a bet on hitting your Bid this Round</p>
-      {([0, 10, 20] as const).map((amount) => (
-        <button
-          key={amount}
-          type="button"
-          disabled={disabled}
-          onClick={() => onInvoke({ pirateName: "RascalOfRoatan", bet: amount })}
-        >
-          Bet {amount}
-        </button>
-      ))}
+      <div className="button-row">
+        {([0, 10, 20] as const).map((amount) => (
+          <button
+            key={amount}
+            type="button"
+            disabled={disabled}
+            onClick={() => onInvoke({ pirateName: "RascalOfRoatan", bet: amount })}
+          >
+            Bet {amount}
+          </button>
+        ))}
+      </div>
     </>
   );
 }

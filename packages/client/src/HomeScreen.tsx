@@ -26,7 +26,7 @@ export function HomeScreen({
   }
 
   return (
-    <div>
+    <div className="screen">
       <h1>Skull King</h1>
       {error && <p role="alert">{error}</p>}
 

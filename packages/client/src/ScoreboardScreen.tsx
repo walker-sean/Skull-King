@@ -6,7 +6,7 @@ export interface ScoreboardScreenProps {
 
 export function ScoreboardScreen({ view }: ScoreboardScreenProps) {
   return (
-    <div>
+    <div className="screen">
       <h1>Scoreboard</h1>
 
       {view.rounds.map((round) => (
