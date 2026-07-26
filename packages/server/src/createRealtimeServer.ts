@@ -13,7 +13,9 @@ import {
 import type { RoomStore } from "@skull-king/persistence";
 import type {
   ClientToServerEvents,
+  CommandResponse,
   DomainEvent,
+  EngineResult,
   RejectionEvent,
   RoomState,
   ServerToClientEvents,
@@ -85,6 +87,50 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
   }
 
   io.on("connection", (socket) => {
+    /**
+     * Shared shape for every Command that acts as an already-seated Player
+     * (as opposed to createRoom/joinRoom, which establish that seat): resolve
+     * the actor's name from this socket's session, run the Command against
+     * the stored Room state, persist and broadcast on success, or report the
+     * rejection on failure.
+     */
+    function runActorCommand<TCommand>(
+      roomCode: string,
+      callback: (response: CommandResponse) => void,
+      buildCommand: (
+        normalizedCode: string,
+        actorName: string | null,
+      ) => TCommand,
+      applyCommand: (
+        state: RoomState | null,
+        command: TCommand,
+      ) => EngineResult,
+    ): void {
+      const normalizedCode = roomCode.trim().toUpperCase();
+      const state = store.loadRoom(normalizedCode);
+      const session = sessionsBySocketId.get(socket.id);
+      const actorName =
+        session !== undefined && session.roomCode === normalizedCode
+          ? session.playerName
+          : null;
+      const result = applyCommand(
+        state,
+        buildCommand(normalizedCode, actorName),
+      );
+
+      if (result.state === null || result.events.some(isRejectionEvent)) {
+        callback({ ok: false, event: firstRejection(result.events) });
+        return;
+      }
+
+      store.saveRoom(result.state);
+      callback({
+        ok: true,
+        state: redactRoomStateFor(result.state, actorName),
+      });
+      void broadcastRoomState(normalizedCode, result.state);
+    }
+
     socket.on("createRoom", ({ hostName }, callback) => {
       const existingCodes = new Set(store.listNonCompletedRoomCodes());
       const roomCode = generateRoomCode(existingCodes);
@@ -150,115 +196,59 @@ export function createRealtimeServer(store: RoomStore): RealtimeServer {
     });
 
     socket.on("startGame", ({ roomCode, scoringMode }, callback) => {
-      const normalizedCode = roomCode.trim().toUpperCase();
-      const state = store.loadRoom(normalizedCode);
-      const session = sessionsBySocketId.get(socket.id);
-      const actorName =
-        session !== undefined && session.roomCode === normalizedCode
-          ? session.playerName
-          : null;
-      const result = startGame(state, {
-        type: "StartGame",
-        roomCode: normalizedCode,
-        scoringMode,
-        actorName,
-      });
-
-      if (result.state === null || result.events.some(isRejectionEvent)) {
-        callback({ ok: false, event: firstRejection(result.events) });
-        return;
-      }
-
-      store.saveRoom(result.state);
-      callback({
-        ok: true,
-        state: redactRoomStateFor(result.state, actorName),
-      });
-      void broadcastRoomState(normalizedCode, result.state);
+      runActorCommand(
+        roomCode,
+        callback,
+        (normalizedCode, actorName) => ({
+          type: "StartGame" as const,
+          roomCode: normalizedCode,
+          scoringMode,
+          actorName,
+        }),
+        startGame,
+      );
     });
 
     socket.on("submitBid", ({ roomCode, bid }, callback) => {
-      const normalizedCode = roomCode.trim().toUpperCase();
-      const state = store.loadRoom(normalizedCode);
-      const session = sessionsBySocketId.get(socket.id);
-      const actorName =
-        session !== undefined && session.roomCode === normalizedCode
-          ? session.playerName
-          : null;
-      const result = submitBid(state, {
-        type: "SubmitBid",
-        roomCode: normalizedCode,
-        bid,
-        actorName,
-      });
-
-      if (result.state === null || result.events.some(isRejectionEvent)) {
-        callback({ ok: false, event: firstRejection(result.events) });
-        return;
-      }
-
-      store.saveRoom(result.state);
-      callback({
-        ok: true,
-        state: redactRoomStateFor(result.state, actorName),
-      });
-      void broadcastRoomState(normalizedCode, result.state);
+      runActorCommand(
+        roomCode,
+        callback,
+        (normalizedCode, actorName) => ({
+          type: "SubmitBid" as const,
+          roomCode: normalizedCode,
+          bid,
+          actorName,
+        }),
+        submitBid,
+      );
     });
 
     socket.on("playCard", ({ roomCode, card }, callback) => {
-      const normalizedCode = roomCode.trim().toUpperCase();
-      const state = store.loadRoom(normalizedCode);
-      const session = sessionsBySocketId.get(socket.id);
-      const actorName =
-        session !== undefined && session.roomCode === normalizedCode
-          ? session.playerName
-          : null;
-      const result = playCard(state, {
-        type: "PlayCard",
-        roomCode: normalizedCode,
-        card,
-        actorName,
-      });
-
-      if (result.state === null || result.events.some(isRejectionEvent)) {
-        callback({ ok: false, event: firstRejection(result.events) });
-        return;
-      }
-
-      store.saveRoom(result.state);
-      callback({
-        ok: true,
-        state: redactRoomStateFor(result.state, actorName),
-      });
-      void broadcastRoomState(normalizedCode, result.state);
+      runActorCommand(
+        roomCode,
+        callback,
+        (normalizedCode, actorName) => ({
+          type: "PlayCard" as const,
+          roomCode: normalizedCode,
+          card,
+          actorName,
+        }),
+        playCard,
+      );
     });
 
     socket.on("invokePirateAbility", ({ roomCode, effect }, callback) => {
-      const normalizedCode = roomCode.trim().toUpperCase();
-      const state = store.loadRoom(normalizedCode);
-      const session = sessionsBySocketId.get(socket.id);
-      const actorName =
-        session !== undefined && session.roomCode === normalizedCode
-          ? session.playerName
-          : null;
-      const result = invokePirateAbility(state, {
-        type: "InvokePirateAbility",
-        roomCode: normalizedCode,
-        effect,
-        actorName,
-      });
-
-      if (result.state === null || result.events.some(isRejectionEvent)) {
-        callback({ ok: false, event: firstRejection(result.events) });
-        return;
-      }
-
-      store.saveRoom(result.state);
-      callback({
-        ok: true,
-        state: redactRoomStateFor(result.state, actorName),
-      });
-      void broadcastRoomState(normalizedCode, result.state);
+      runActorCommand(
+        roomCode,
+        callback,
+        (normalizedCode, actorName) => ({
+          type: "InvokePirateAbility" as const,
+          roomCode: normalizedCode,
+          effect,
+          actorName,
+        }),
+        invokePirateAbility,
+      );
     });
 
     socket.on("disconnect", () => {
