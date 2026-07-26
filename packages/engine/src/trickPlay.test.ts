@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { Card, Player, RoomState, Suit } from "@skull-king/shared";
-import { currentTurnPlayerName, playCard } from "./trickPlay.js";
+import type {
+  Card,
+  Player,
+  RoomState,
+  Suit,
+  TrickPlay,
+} from "@skull-king/shared";
+import { currentTurnPlayerName, legalPlays, playCard } from "./trickPlay.js";
 
 function suited(suit: Suit, rank: number): Card {
   return { kind: "Suited", suit, rank };
@@ -65,6 +71,39 @@ describe("currentTurnPlayerName", () => {
         ],
       }),
     ).toBe("Alice");
+  });
+});
+
+describe("legalPlays", () => {
+  it("allows any card when no Suit has been led yet", () => {
+    const hand = [suited("Parrot", 5), suited("TreasureChest", 9)];
+
+    expect(legalPlays(hand, [])).toEqual(hand);
+  });
+
+  it("restricts to the led Suit and Special Cards when the Player holds the led Suit", () => {
+    const hand: Card[] = [
+      suited("Parrot", 5),
+      suited("TreasureChest", 9),
+      { kind: "Escape" },
+    ];
+    const trick: TrickPlay[] = [
+      { playerName: "Alice", card: suited("Parrot", 2) },
+    ];
+
+    expect(legalPlays(hand, trick)).toEqual([
+      suited("Parrot", 5),
+      { kind: "Escape" },
+    ]);
+  });
+
+  it("allows any card when the Player has none of the led Suit", () => {
+    const hand = [suited("TreasureChest", 9), suited("JollyRoger", 3)];
+    const trick: TrickPlay[] = [
+      { playerName: "Alice", card: suited("Parrot", 2) },
+    ];
+
+    expect(legalPlays(hand, trick)).toEqual(hand);
   });
 });
 

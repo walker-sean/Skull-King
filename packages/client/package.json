@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@skull-king/engine": "*",
     "@skull-king/shared": "*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

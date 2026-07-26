@@ -46,6 +46,30 @@ function suitOf(card: Card): Suit | null {
 }
 
 /**
+ * Which of a Player's Hand cards are legal to play into the Trick in progress (see
+ * CONTEXT.md's Special Card entry): once a led Suit is set, a Player holding it must follow,
+ * so only cards matching the led Suit or Special Cards (no Suit) stay legal. Before any Suit
+ * is led, or when the Player has none of the led Suit, every card in Hand is legal.
+ */
+export function legalPlays(
+  hand: readonly Card[],
+  currentTrick: readonly TrickPlay[],
+): Card[] {
+  const led = ledSuit(currentTrick);
+  if (led === null) {
+    return [...hand];
+  }
+  const mustFollow = hand.some((card) => suitOf(card) === led);
+  if (!mustFollow) {
+    return [...hand];
+  }
+  return hand.filter((card) => {
+    const suit = suitOf(card);
+    return suit === null || suit === led;
+  });
+}
+
+/**
  * The Trick's led Suit: a Special Card has no Suit, so when one leads, there's nothing to
  * follow until the first Suited card played sets it (see CONTEXT.md's Loot entry — "if a
  * Loot card leads the trick, the next suited card played sets the lead suit").
@@ -364,15 +388,9 @@ export function playCard(
     return rejected(state, command.roomCode, "InvalidTigressDeclaration");
   }
 
-  const led = ledSuit(state.currentTrick);
-  const cardSuit = suitOf(command.card);
-  // Only a Suited card can violate follow-suit — a Special Card (no Suit) is always
-  // legal to play regardless of the led Suit (see CONTEXT.md's Special Card entry).
-  if (led !== null && cardSuit !== null && cardSuit !== led) {
-    const mustFollow = player.hand.some((card) => suitOf(card) === led);
-    if (mustFollow) {
-      return rejected(state, command.roomCode, "MustFollowSuit");
-    }
+  const legal = legalPlays(player.hand, state.currentTrick);
+  if (!legal.some((card) => cardsEqual(card, command.card))) {
+    return rejected(state, command.roomCode, "MustFollowSuit");
   }
 
   const remainingHand = [
