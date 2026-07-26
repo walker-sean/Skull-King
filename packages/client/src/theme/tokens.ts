@@ -3,7 +3,7 @@
  *
  * `tailwind.config.ts` reads these constants directly (rather than
  * duplicating hex values), and any non-className consumer (raw SVG `fill=`,
- * JS-computed motion values) should import from here too, per ADR-0013.
+ * JS-computed motion values) should import from here too.
  */
 
 export const colors = {
