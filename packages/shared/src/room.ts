@@ -1,4 +1,5 @@
 import type { Card, PirateName } from "./card.js";
+import type { RascalRoundScore, RoundScore } from "./events.js";
 
 export type RoomStatus = "Lobby" | "Active" | "Paused" | "Completed";
 
@@ -47,6 +48,17 @@ export interface PendingPirateAbility {
 }
 
 /**
+ * The undealt Deck peeked at via Juanita Jade's Advanced Pirate Ability (see CONTEXT.md's
+ * Advanced Pirate Ability entry), awaiting delivery to the Player who invoked it. Only that
+ * Player may see `cards` (see redactRoomStateFor) — cleared by the next command that
+ * mutates state, mirroring PendingPirateAbility's lifecycle.
+ */
+export interface PendingReveal {
+  playerName: string;
+  cards: Card[];
+}
+
+/**
  * A bet placed via Rascal of Roatan's Advanced Pirate Ability: 10 or 20 points riding on
  * hitting that Round's Bid, resolved when the Round is scored.
  */
@@ -90,4 +102,8 @@ export interface RoomState {
   pirateBets: PirateBet[];
   /** Every capture Bonus earned so far this Game, one entry per bonus-earning Trick. */
   cardBonuses: CardBonus[];
+  /** Every scored Round's full points breakdown so far this Game, in Round order. */
+  roundScores: (RoundScore | RascalRoundScore)[];
+  /** The undealt Deck peeked at via Juanita Jade's ability, awaiting delivery; null otherwise. */
+  pendingReveal: PendingReveal | null;
 }

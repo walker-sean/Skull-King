@@ -37,6 +37,8 @@ const lobbyRoom: RoomState = {
   pendingPirateAbility: null,
   pirateBets: [],
   cardBonuses: [],
+  roundScores: [],
+  pendingReveal: null,
 };
 
 describe("RoomStore", () => {
@@ -102,6 +104,8 @@ describe("RoomStore", () => {
       pendingPirateAbility: null,
       pirateBets: [],
       cardBonuses: [],
+      roundScores: [],
+      pendingReveal: null,
     });
 
     expect(store.listNonCompletedRoomCodes()).toEqual(["ABCD"]);
@@ -140,10 +144,51 @@ describe("RoomStore", () => {
       pendingPirateAbility: null,
       pirateBets: [],
       cardBonuses: [],
+      roundScores: [],
+      pendingReveal: null,
     };
     store.saveRoom(completedRoom);
 
     expect(store.loadRoom("WXYZ")).toEqual(completedRoom);
+  });
+
+  it("round-trips a non-empty roundScores and a set pendingReveal without data loss", () => {
+    const roomWithHistory: RoomState = {
+      ...lobbyRoom,
+      status: "Active",
+      scoringMode: "Traditional",
+      currentRound: 2,
+      currentTrick: [],
+      trickLeader: "Alice",
+      roundScores: [
+        {
+          scoringMode: "Traditional",
+          playerName: "Alice",
+          bidPoints: 20,
+          allianceBonus: 0,
+          roundPoints: 20,
+          totalScore: 20,
+        },
+        {
+          scoringMode: "Rascal",
+          playerName: "Bob",
+          outcome: "DirectHit",
+          bidPoints: 10,
+          bonusPoints: 0,
+          allianceBonus: 0,
+          betResult: 0,
+          roundPoints: 10,
+          totalScore: 10,
+        },
+      ],
+      pendingReveal: {
+        playerName: "Alice",
+        cards: [{ kind: "Suited", suit: "Parrot", rank: 9 }],
+      },
+    };
+    store.saveRoom(roomWithHistory);
+
+    expect(store.loadRoom("ABCD")).toEqual(roomWithHistory);
   });
 
   it("survives a simulated process restart (reopening the same file)", () => {

@@ -93,6 +93,7 @@ export function invokePirateAbility(
           ...state,
           trickLeader: chosenLeader.name,
           pendingPirateAbility: null,
+          pendingReveal: null,
         },
         events,
       };
@@ -121,6 +122,7 @@ export function invokePirateAbility(
               : candidate,
           ),
           pendingPirateAbility: null,
+          pendingReveal: null,
         },
         events,
       };
@@ -154,6 +156,7 @@ export function invokePirateAbility(
               : candidate,
           ),
           pendingPirateAbility: null,
+          pendingReveal: null,
         },
         events,
       };
@@ -178,7 +181,12 @@ export function invokePirateAbility(
               },
             ];
       return {
-        state: { ...state, pirateBets, pendingPirateAbility: null },
+        state: {
+          ...state,
+          pirateBets,
+          pendingPirateAbility: null,
+          pendingReveal: null,
+        },
         events,
       };
     }
@@ -191,7 +199,11 @@ export function invokePirateAbility(
         cards: state.remainingDeck,
       });
       return {
-        state: { ...state, pendingPirateAbility: null },
+        state: {
+          ...state,
+          pendingPirateAbility: null,
+          pendingReveal: { playerName: player.name, cards: state.remainingDeck },
+        },
         events,
       };
     }

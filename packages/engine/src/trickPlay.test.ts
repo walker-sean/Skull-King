@@ -35,6 +35,8 @@ function activeRoom(
     pendingPirateAbility: null,
     pirateBets: [],
     cardBonuses: [],
+    roundScores: [],
+    pendingReveal: null,
   };
 }
 
@@ -959,6 +961,61 @@ describe("playCard", () => {
       expect(final.state?.players.find((p) => p.name === "Bob")?.score).toBe(
         10,
       );
+      const roundScoredEvent = final.events.find(
+        (event) => event.type === "RoundScored",
+      );
+      expect(final.state?.roundScores).toEqual(roundScoredEvent?.scores);
+    });
+
+    it("accumulates each scored Round's breakdown in roundScores across multiple Rounds", () => {
+      const players = [
+        { ...playerWith("Alice", [suited("Parrot", 5)], true), bid: 1 },
+        { ...playerWith("Bob", [suited("Parrot", 2)]), bid: 0 },
+      ];
+      const room = { ...activeRoom(players), currentRound: 3 };
+
+      const afterAlice1 = playCard(room, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 5),
+        actorName: "Alice",
+      });
+      const afterRound1 = playCard(afterAlice1.state as RoomState, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 2),
+        actorName: "Bob",
+      });
+      expect(afterRound1.state?.roundScores).toHaveLength(2);
+      expect(
+        afterRound1.state?.roundScores.every((score) => score.playerName),
+      ).toBe(true);
+
+      const roundTwoRoom = {
+        ...(afterRound1.state as RoomState),
+        players: (afterRound1.state as RoomState).players.map((player) => ({
+          ...player,
+          hand: [suited("Parrot", player.name === "Alice" ? 5 : 2)],
+          bid: player.name === "Alice" ? 1 : 0,
+        })),
+      };
+      const afterBob2 = playCard(roundTwoRoom, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 2),
+        actorName: "Bob",
+      });
+      const afterRound2 = playCard(afterBob2.state as RoomState, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 5),
+        actorName: "Alice",
+      });
+
+      expect(afterRound2.state?.roundScores).toHaveLength(4);
+      expect(afterRound2.state?.roundScores.slice(0, 2)).toEqual(
+        afterRound1.state?.roundScores,
+      );
     });
 
     it("does not raise RoundScored or touch scores while the Round is still in progress", () => {
@@ -1129,6 +1186,14 @@ describe("playCard", () => {
         expect(
           final.state?.cardBonuses.find((b) => b.playerName === "Alice"),
         ).toEqual({ round: 1, playerName: "Alice", points: 20 });
+        expect(final.state?.roundScores).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              scoringMode: "Rascal",
+              playerName: "Alice",
+            }),
+          ]),
+        );
       });
 
       it("resolves a pending Rascal of Roatan bet when the Round is scored", () => {
@@ -1239,6 +1304,28 @@ describe("playCard", () => {
       for (const player of final.state?.players ?? []) {
         expect(player.hand).toEqual([]);
       }
+    });
+  });
+
+  describe("pendingReveal lifecycle", () => {
+    it("clears a pending reveal once the next card is played", () => {
+      const players = [
+        playerWith("Alice", [suited("Parrot", 5)], true),
+        playerWith("Bob", [suited("Parrot", 2)]),
+      ];
+      const room = {
+        ...activeRoom(players),
+        pendingReveal: { playerName: "Alice", cards: [suited("Parrot", 9)] },
+      };
+
+      const result = playCard(room, {
+        type: "PlayCard",
+        roomCode: "ABCD",
+        card: suited("Parrot", 5),
+        actorName: "Alice",
+      });
+
+      expect(result.state?.pendingReveal).toBeNull();
     });
   });
 

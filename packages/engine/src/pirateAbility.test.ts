@@ -34,6 +34,8 @@ function roomWithPendingAbility(
     pendingPirateAbility: { playerName: winnerName, pirateName },
     pirateBets: [],
     cardBonuses: [],
+    roundScores: [],
+    pendingReveal: null,
   };
 }
 
@@ -456,6 +458,28 @@ describe("invokePirateAbility", () => {
       expect(result.events).toContainEqual({
         type: "UndealtCardsRevealed",
         roomCode: "ABCD",
+        playerName: "Alice",
+        cards: remainingDeck,
+      });
+    });
+
+    it("populates pendingReveal for the invoking Player", () => {
+      const remainingDeck: Card[] = [suited(7), { kind: "Escape" }];
+      const room = roomWithPendingAbility(
+        [playerWith("Alice", [], 2, true)],
+        "JuanitaJade",
+        "Alice",
+        remainingDeck,
+      );
+
+      const result = invokePirateAbility(room, {
+        type: "InvokePirateAbility",
+        roomCode: "ABCD",
+        effect: { pirateName: "JuanitaJade" },
+        actorName: "Alice",
+      });
+
+      expect(result.state?.pendingReveal).toEqual({
         playerName: "Alice",
         cards: remainingDeck,
       });

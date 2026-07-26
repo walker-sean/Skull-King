@@ -35,6 +35,8 @@ export function createRoom(command: CreateRoomCommand): EngineResult {
       pendingPirateAbility: null,
       pirateBets: [],
       cardBonuses: [],
+      roundScores: [],
+      pendingReveal: null,
     },
     events: [{ type: "RoomCreated", roomCode: command.roomCode, hostName }],
   };

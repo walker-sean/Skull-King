@@ -37,6 +37,8 @@ function activeRoomWith(handSize: number, count: number): RoomState {
     pendingPirateAbility: null,
     pirateBets: [],
     cardBonuses: [],
+    roundScores: [],
+    pendingReveal: null,
   };
 }
 

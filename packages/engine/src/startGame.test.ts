@@ -28,6 +28,8 @@ function lobbyWith(count: number): RoomState {
     pendingPirateAbility: null,
     pirateBets: [],
     cardBonuses: [],
+    roundScores: [],
+    pendingReveal: null,
   };
 }
 

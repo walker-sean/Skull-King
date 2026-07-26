@@ -40,6 +40,8 @@ function activeRoom(): RoomState {
     pendingPirateAbility: null,
     pirateBets: [],
     cardBonuses: [],
+    roundScores: [],
+    pendingReveal: null,
   };
 }
 
@@ -124,6 +126,8 @@ describe("disconnectPlayer", () => {
       pendingPirateAbility: null,
       pirateBets: [],
       cardBonuses: [],
+      roundScores: [],
+      pendingReveal: null,
     };
     const result = disconnectPlayer(room, {
       type: "Disconnect",

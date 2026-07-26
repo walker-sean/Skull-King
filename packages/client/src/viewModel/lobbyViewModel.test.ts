@@ -34,6 +34,8 @@ const roomState: RoomState = {
   pendingPirateAbility: null,
   pirateBets: [],
   cardBonuses: [],
+  roundScores: [],
+  pendingReveal: null,
 };
 
 describe("selectLobbyView", () => {

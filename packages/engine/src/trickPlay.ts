@@ -241,12 +241,18 @@ function resolveTrick(trick: readonly TrickPlay[]): TrickResolution {
  * advancement happens mid-Round, and the Trick in progress's leader/undealt Deck pass
  * through untouched.
  */
+/** withRoundScoring's result: RoundAdvanceResult plus the roundScores it accumulated. */
+type RoundScoringResult = RoundAdvanceResult & {
+  roundScores: RoomState["roundScores"];
+};
+
 function withRoundScoring(
   round: number,
   scoringMode: RoomState["scoringMode"],
   alliances: RoomState["alliances"],
   cardBonuses: RoomState["cardBonuses"],
   pirateBets: RoomState["pirateBets"],
+  roundScores: RoomState["roundScores"],
   roomCode: string,
   players: Player[],
   trickInProgress: {
@@ -254,7 +260,7 @@ function withRoundScoring(
     remainingDeck: RoomState["remainingDeck"];
   },
   events: DomainEvent[],
-): RoundAdvanceResult {
+): RoundScoringResult {
   if (!players.every((player) => player.hand.length === 0)) {
     return {
       players,
@@ -262,6 +268,7 @@ function withRoundScoring(
       status: "Active",
       trickLeader: trickInProgress.trickLeader,
       remainingDeck: trickInProgress.remainingDeck,
+      roundScores,
     };
   }
 
@@ -275,17 +282,18 @@ function withRoundScoring(
   if (advanced.status === "Completed") {
     events.push({ type: "GameCompleted", roomCode });
   }
-  return advanced;
+  return { ...advanced, roundScores: [...roundScores, ...scores] };
 }
 
 /** The RoomState fields a just-finished Trick's round-end outcome patches onto state. */
-function applyRoundEnd(roundEnd: RoundAdvanceResult) {
+function applyRoundEnd(roundEnd: RoundScoringResult) {
   return {
     players: roundEnd.players,
     currentRound: roundEnd.currentRound,
     status: roundEnd.status,
     trickLeader: roundEnd.trickLeader,
     remainingDeck: roundEnd.remainingDeck,
+    roundScores: roundEnd.roundScores,
   };
 }
 
@@ -394,6 +402,7 @@ export function playCard(
         state.alliances,
         state.cardBonuses,
         state.pirateBets,
+        state.roundScores,
         command.roomCode,
         players,
         {
@@ -408,6 +417,7 @@ export function playCard(
           ...applyRoundEnd(roundEnd),
           currentTrick: [],
           pendingPirateAbility: null,
+          pendingReveal: null,
         },
         events,
       };
@@ -482,6 +492,7 @@ export function playCard(
       [...state.alliances, ...newAlliances],
       [...state.cardBonuses, ...newCardBonuses],
       state.pirateBets,
+      state.roundScores,
       command.roomCode,
       playersAfterTrick,
       { trickLeader: winnerName, remainingDeck: state.remainingDeck },
@@ -496,13 +507,14 @@ export function playCard(
         alliances: [...state.alliances, ...newAlliances],
         cardBonuses: [...state.cardBonuses, ...newCardBonuses],
         pendingPirateAbility,
+        pendingReveal: null,
       },
       events,
     };
   }
 
   return {
-    state: { ...state, players, currentTrick: trick },
+    state: { ...state, players, currentTrick: trick, pendingReveal: null },
     events,
   };
 }

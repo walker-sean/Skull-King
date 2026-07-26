@@ -56,6 +56,8 @@ const lobbyState: RoomState = {
   pendingPirateAbility: null,
   pirateBets: [],
   cardBonuses: [],
+  roundScores: [],
+  pendingReveal: null,
 };
 
 describe("App", () => {

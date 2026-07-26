@@ -26,6 +26,8 @@ function lobbyWithHost(): RoomState {
     pendingPirateAbility: null,
     pirateBets: [],
     cardBonuses: [],
+    roundScores: [],
+    pendingReveal: null,
   };
 }
 
@@ -188,6 +190,8 @@ describe("joinRoom", () => {
       pendingPirateAbility: null,
       pirateBets: [],
       cardBonuses: [],
+      roundScores: [],
+      pendingReveal: null,
     };
 
     const result = joinRoom(room, {
@@ -249,6 +253,8 @@ describe("joinRoom", () => {
       pendingPirateAbility: null,
       pirateBets: [],
       cardBonuses: [],
+      roundScores: [],
+      pendingReveal: null,
     };
 
     const result = joinRoom(room, {
@@ -297,6 +303,8 @@ describe("joinRoom", () => {
       pendingPirateAbility: null,
       pirateBets: [],
       cardBonuses: [],
+      roundScores: [],
+      pendingReveal: null,
     };
 
     const result = joinRoom(room, {
@@ -349,6 +357,8 @@ describe("joinRoom", () => {
       pendingPirateAbility: null,
       pirateBets: [],
       cardBonuses: [],
+      roundScores: [],
+      pendingReveal: null,
     };
     const result = joinRoom(room, {
       type: "JoinRoom",
