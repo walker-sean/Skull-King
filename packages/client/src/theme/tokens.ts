@@ -26,6 +26,28 @@ export const colors = {
     DEFAULT: "#8b2e2e",
     dark: "#5e1f1f",
   },
+  suit: {
+    parrot: {
+      light: "#5b9c6c",
+      DEFAULT: "#3f7d4f",
+      dark: "#2a5c37",
+    },
+    treasureChest: {
+      light: "#e6c34d",
+      DEFAULT: "#d4a017",
+      dark: "#a67d10",
+    },
+    pirateMap: {
+      light: "#9a7bb5",
+      DEFAULT: "#6b4d8a",
+      dark: "#4a3563",
+    },
+    jollyRoger: {
+      light: "#3a3a3a",
+      DEFAULT: "#1a1a1a",
+      dark: "#000000",
+    },
+  },
 } as const;
 
 export const fontFamily = {
