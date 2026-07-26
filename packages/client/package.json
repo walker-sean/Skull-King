@@ -12,6 +12,7 @@
   "dependencies": {
     "@skull-king/engine": "*",
     "@skull-king/shared": "*",
+    "framer-motion": "^12.42.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "socket.io-client": "^4.8.1"
