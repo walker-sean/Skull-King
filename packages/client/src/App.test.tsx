@@ -986,4 +986,153 @@ describe("App", () => {
       screen.getByRole("button", { name: "Parrot 7" }),
     ).not.toBeDisabled();
   });
+
+  it("lets a Player flip to the Scoreboard and back during Bidding via the tab toggle", async () => {
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: biddingState }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 3/i);
+
+    expect(
+      screen.getByRole("heading", { name: /submit your bid/i }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /scoreboard/i }));
+
+    expect(
+      screen.getByRole("heading", { name: /^scoreboard$/i }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /back to game/i }));
+
+    expect(
+      screen.getByRole("heading", { name: /submit your bid/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("lets a Player flip to the Scoreboard while the Game is Paused via the tab toggle", async () => {
+    const pausedState: RoomState = {
+      ...trickPlayState,
+      status: "Paused",
+      players: [
+        trickPlayAlice,
+        { ...trickPlayBob, connected: false },
+        trickPlayCarol,
+      ],
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: pausedState }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 1/i);
+
+    fireEvent.click(screen.getByRole("button", { name: /scoreboard/i }));
+
+    expect(
+      screen.getByRole("heading", { name: /^scoreboard$/i }),
+    ).toBeInTheDocument();
+    expect(within(screen.getByRole("status")).getByText(/bob/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /back to game/i }));
+
+    expect(
+      screen.getByRole("heading", { name: /trick/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("lets a Player flip to the Scoreboard and back during Trick-play via the tab toggle", async () => {
+    const socketClient = createMockSocketClient({
+      createRoom: vi
+        .fn()
+        .mockResolvedValue({ ok: true, state: trickPlayState }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+    await screen.findByText(/round 1/i);
+
+    expect(
+      screen.getByRole("heading", { name: /trick/i }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /scoreboard/i }));
+
+    expect(
+      screen.getByRole("heading", { name: /^scoreboard$/i }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /back to game/i }));
+
+    expect(
+      screen.getByRole("heading", { name: /trick/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("forces the Scoreboard screen once the Room is Completed, hiding the tab toggle", async () => {
+    const completedState: RoomState = {
+      ...trickPlayState,
+      status: "Completed",
+      currentRound: 10,
+      roundScores: [
+        {
+          playerName: "Alice",
+          scoringMode: "Traditional",
+          bidPoints: 20,
+          allianceBonus: 0,
+          roundPoints: 20,
+          totalScore: 20,
+        },
+        {
+          playerName: "Bob",
+          scoringMode: "Traditional",
+          bidPoints: 0,
+          allianceBonus: 0,
+          roundPoints: 0,
+          totalScore: 0,
+        },
+        {
+          playerName: "Carol",
+          scoringMode: "Traditional",
+          bidPoints: 0,
+          allianceBonus: 0,
+          roundPoints: 0,
+          totalScore: 0,
+        },
+      ],
+    };
+    const socketClient = createMockSocketClient({
+      createRoom: vi.fn().mockResolvedValue({ ok: true, state: completedState }),
+    });
+    render(<App socketClient={socketClient} />);
+
+    fireEvent.change(screen.getByLabelText(/your name/i), {
+      target: { value: "Alice" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /create room/i }));
+
+    expect(
+      await screen.findByRole("heading", { name: /^scoreboard$/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/final standings/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /back to game/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /scoreboard/i }),
+    ).not.toBeInTheDocument();
+  });
 });

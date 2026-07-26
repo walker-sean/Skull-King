@@ -12,6 +12,8 @@ import { BiddingScreen } from "./BiddingScreen.js";
 import { HomeScreen } from "./HomeScreen.js";
 import { LobbyScreen } from "./LobbyScreen.js";
 import { PausedOverlay } from "./PausedOverlay.js";
+import { ScoreboardScreen } from "./ScoreboardScreen.js";
+import { ScoreboardToggle } from "./ScoreboardToggle.js";
 import { TrickPlayScreen } from "./TrickPlayScreen.js";
 import { REJECTION_MESSAGES } from "./rejectionMessages.js";
 import {
@@ -26,11 +28,14 @@ import {
   selectPeekedCards,
   selectPirateAbilityView,
 } from "./viewModel/pirateAbilityViewModel.js";
+import { selectScoreboardView } from "./viewModel/scoreboardViewModel.js";
 import {
   deriveTrickOutcome,
   selectTrickPlayView,
   type TrickOutcome,
 } from "./viewModel/trickPlayViewModel.js";
+
+type Tab = "play" | "scoreboard";
 
 export interface AppProps {
   socketClient: SocketClient;
@@ -43,6 +48,7 @@ export function App({ socketClient }: AppProps) {
   const [trickOutcome, setTrickOutcome] = useState<TrickOutcome | null>(null);
   const [newAlliance, setNewAlliance] = useState<Alliance | null>(null);
   const [drawnCards, setDrawnCards] = useState<Card[] | null>(null);
+  const [currentTab, setCurrentTab] = useState<Tab>("play");
   const roomStateRef = useRef<RoomState | null>(null);
 
   useEffect(() => {
@@ -142,6 +148,10 @@ export function App({ socketClient }: AppProps) {
     }
   }
 
+  if (roomState && localPlayerName && roomState.status === "Completed") {
+    return <ScoreboardScreen view={selectScoreboardView(roomState)} />;
+  }
+
   if (
     roomState &&
     localPlayerName &&
@@ -154,10 +164,31 @@ export function App({ socketClient }: AppProps) {
       />
     );
 
+    if (currentTab === "scoreboard") {
+      return (
+        <>
+          {pausedOverlay}
+          <ScoreboardToggle
+            showingScoreboard
+            onToggle={() => setCurrentTab("play")}
+          />
+          <ScoreboardScreen view={selectScoreboardView(roomState)} />
+        </>
+      );
+    }
+
+    const scoreboardToggle = (
+      <ScoreboardToggle
+        showingScoreboard={false}
+        onToggle={() => setCurrentTab("scoreboard")}
+      />
+    );
+
     if (areAllBidsSubmitted(roomState)) {
       return (
         <>
           {pausedOverlay}
+          {scoreboardToggle}
           <TrickPlayScreen
             view={selectTrickPlayView(roomState, localPlayerName, trickOutcome)}
             error={error}
@@ -179,6 +210,7 @@ export function App({ socketClient }: AppProps) {
     return (
       <>
         {pausedOverlay}
+        {scoreboardToggle}
         <BiddingScreen
           view={selectBiddingView(roomState, localPlayerName)}
           error={error}
